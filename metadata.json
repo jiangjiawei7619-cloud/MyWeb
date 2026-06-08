@@ -1,0 +1,6 @@
+{
+  "name": "Javin Jiang Portfolio",
+  "description": "An immersive, cinematic cyber-noir interactive portfolio showing works, about info, and system logs under the Javin Jiang brand.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

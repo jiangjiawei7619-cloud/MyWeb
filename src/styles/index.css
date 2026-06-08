@@ -1,0 +1,643 @@
+/* ========== 加载动画 ========== */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #050505;
+  color: #ff1a1a;
+  font-family: 'Courier New', Courier, monospace;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 8vw;
+  overflow: hidden;
+  transition: opacity 0.4s ease, filter 0.3s ease;
+}
+
+/* 噪点背景 */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+  animation: noiseMove 0.5s steps(4) infinite;
+}
+
+@keyframes noiseMove {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(-2px,1px); }
+  50% { transform: translate(1px,-1px); }
+  75% { transform: translate(-1px,2px); }
+  100% { transform: translate(0,0); }
+}
+
+/* 扫描线 */
+.scanline {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 50%,
+    rgba(255, 0, 0, 0.03) 50%
+  );
+  background-size: 100% 4px;
+  pointer-events: none;
+  animation: scanlineMove 8s linear infinite;
+}
+
+@keyframes scanlineMove {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* 终端文字区 */
+.terminal {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(14px, 1.2vw, 18px);
+  line-height: 1.8;
+  text-shadow: 0 0 8px rgba(255, 26, 26, 0.4);
+}
+
+.terminal-line {
+  opacity: 0;
+  animation: fadeIn 0.2s ease forwards;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.cursor {
+  opacity: 0;
+  margin-left: 2px;
+}
+.cursor-visible {
+  opacity: 1;
+}
+
+/* 故障效果 */
+.screen-glitch {
+  animation: screenShake 0.15s ease 3;
+  filter: drop-shadow(2px 0 #00ffcc) drop-shadow(-2px 0 #ff0044);
+}
+
+.line-glitch {
+  animation: textGlitch 0.2s ease 2;
+}
+
+@keyframes screenShake {
+  0%, 100% { transform: translate(0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, 2px); }
+  80% { transform: translate(1px, -2px); }
+}
+
+@keyframes textGlitch {
+  0%, 100% { 
+    clip-path: inset(0 0 0 0); 
+    transform: translate(0);
+  }
+  25% { 
+    clip-path: inset(10% 0 60% 0); 
+    transform: translate(-2px);
+  }
+  50% { 
+    clip-path: inset(40% 0 20% 0); 
+    transform: translate(2px);
+  }
+  75% { 
+    clip-path: inset(70% 0 5% 0); 
+    transform: translate(-1px);
+  }
+}
+
+/* 最终闪白退场 */
+.final-flash {
+  color: #fff;
+  text-shadow: 0 0 20px #ff1a1a, 0 0 40px #ff1a1a;
+  animation: flashIn 0.3s ease forwards;
+}
+
+@keyframes flashIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* 底部状态栏 */
+.status-bar {
+  position: absolute;
+  bottom: 2rem;
+  left: 8vw;
+  right: 8vw;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #551111;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+/* 退场：直接移除组件即可，React卸载自带消失 */
+
+/* ========== 电路/血管通电加载动画 ========== */
+.circuit-loader-noise {
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: noiseMove 0.4s steps(3) infinite;
+}
+
+.circuit-loader-scanlines {
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.45;
+}
+
+@keyframes circuitFlowDraw {
+  from {
+    stroke-dashoffset: var(--path-len);
+    opacity: 0.4;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes circuitNodePulse {
+  from {
+    r: 2.5;
+    filter: drop-shadow(0 0 3px rgba(255, 83, 87, 0.6));
+  }
+  to {
+    r: 4;
+    filter: drop-shadow(0 0 8px rgba(255, 83, 87, 1));
+  }
+}
+
+.circuit-flow-path {
+  --path-len: 1000;
+}
+
+.circuit-flash-overlay {
+  mix-blend-mode: screen;
+}
+
+/* —— 加载结束 · 赛博破败 handoff —— */
+.circuit-glitch-shake {
+  animation: circuitGlitchShake 0.55s ease-in-out;
+}
+
+@keyframes circuitGlitchShake {
+  0%, 100% { transform: translate(0, 0); }
+  12% { transform: translate(-4px, 1px); }
+  28% { transform: translate(5px, -2px); }
+  44% { transform: translate(-3px, 3px); }
+  60% { transform: translate(4px, -1px); }
+  76% { transform: translate(-2px, -2px); }
+}
+
+.circuit-chroma-split {
+  filter:
+    drop-shadow(-4px 0 0 rgba(255, 83, 87, 0.55))
+    drop-shadow(4px 1px 0 rgba(0, 238, 252, 0.45))
+    drop-shadow(0 0 16px rgba(255, 83, 87, 0.75));
+}
+
+.circuit-noise-burst {
+  opacity: 0.18 !important;
+  animation: noiseMove 0.12s steps(6) infinite, circuitNoisePulse 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes circuitNoisePulse {
+  from { opacity: 0.12; }
+  to { opacity: 0.22; }
+}
+
+.circuit-scanlines-rush {
+  animation: circuitScanRush 0.35s linear infinite;
+  opacity: 0.65 !important;
+}
+
+@keyframes circuitScanRush {
+  from { background-position: 0 0; }
+  to { background-position: 0 12px; }
+}
+
+.circuit-tear-slice {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 83, 87, 0.15) 0%,
+    rgba(0, 0, 0, 0.85) 20%,
+    rgba(0, 0, 0, 0.9) 80%,
+    rgba(0, 238, 252, 0.12) 100%
+  );
+  box-shadow: 0 0 12px rgba(255, 83, 87, 0.25);
+}
+
+.circuit-breach-ring {
+  border: 1px solid rgba(255, 83, 87, 0.65);
+  box-shadow:
+    0 0 20px rgba(255, 83, 87, 0.5),
+    0 0 40px rgba(0, 238, 252, 0.2),
+    inset 0 0 30px rgba(255, 83, 87, 0.15);
+}
+
+.circuit-data-shard {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 83, 87, 0.5) 30%,
+    rgba(0, 238, 252, 0.4) 50%,
+    rgba(255, 83, 87, 0.3) 70%,
+    transparent 100%
+  );
+  transform-origin: left center;
+}
+
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #ffb3af;
+  --color-primary-container: #ff5357;
+  --color-on-primary: #68000e;
+  --color-on-primary-container: #5c000b;
+  --color-primary-fixed: #ffdad8;
+  --color-primary-fixed-dim: #ffb3af;
+  --color-secondary: #d3fbff;
+  --color-secondary-container: #00eefc;
+  --color-tertiary: #6ed4f1;
+  --color-tertiary-container: #2b9db9;
+  --color-background: #131313;
+  --color-surface: #131313;
+  --color-surface-container: #201f1f;
+  --color-surface-container-high: #2a2a2a;
+  --color-surface-container-highest: #353534;
+  --color-surface-variant: #353534;
+  --color-on-surface: #e5e2e1;
+  --color-on-surface-variant: #e9bcb9;
+  
+  --font-sans: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-space: "Space Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer utilities {
+  .scanlines {
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0) 50%,
+      rgba(0, 0, 0, 0.25) 50%,
+      rgba(0, 0, 0, 0.25)
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+  }
+
+  .crt-overlay {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%,
+      rgba(0,0,0,0.2) 50%
+    ), linear-gradient(
+      90deg, 
+      rgba(255, 0, 0, 0.05), 
+      rgba(0, 255, 0, 0.02), 
+      rgba(0,0,255,0.05)
+    );
+    background-size: 100% 4px, 6px 100%;
+    z-index: 100;
+    opacity: 0.85;
+  }
+
+  .noise-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 5;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  .hud-border {
+    border: 1px solid rgba(255, 83, 87, 0.25);
+    background: rgba(10, 10, 10, 0.65);
+    backdrop-filter: blur(12px);
+  }
+
+  .glass-panel {
+    background: rgba(10, 10, 10, 0.7);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 179, 175, 0.15);
+  }
+
+  .glitch-hover:hover {
+    text-shadow: 2px 0 #ff5357, -2px 0 #00eefc;
+    animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+  }
+
+  .bg-grid {
+    background-size: 50px 50px;
+    background-image: 
+      linear-gradient(to right, rgba(255, 83, 87, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 83, 87, 0.03) 1px, transparent 1px);
+  }
+
+  .terminal-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background-color: #ffb3af;
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+  }
+}
+
+@keyframes glitch-skew {
+  0% { transform: skew(0deg); }
+  20% { transform: skew(-3deg); }
+  40% { transform: skew(3deg); }
+  60% { transform: skew(-1deg); }
+  80% { transform: skew(1deg); }
+  100% { transform: skew(0deg); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Custom glow classes */
+.neon-glow-primary {
+  box-shadow: 0 0 15px rgba(255, 83, 87, 0.2);
+}
+
+.neon-text-primary {
+  text-shadow: 0 0 8px rgba(255, 179, 175, 0.4);
+}
+
+.neon-text-cyan {
+  text-shadow: 0 0 8px rgba(0, 238, 252, 0.4);
+}
+
+@keyframes soundWave {
+  0%, 100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.sound-bar {
+  transform-origin: bottom;
+  transition: transform 0.25s ease, height 0.25s ease;
+}
+
+.sound-bar-1 {
+  animation: soundWave 0.65s ease-in-out infinite;
+}
+
+.sound-bar-2 {
+  animation: soundWave 0.85s ease-in-out infinite;
+}
+
+.sound-bar-3 {
+  animation: soundWave 0.55s ease-in-out infinite;
+}
+
+.sound-bar-4 {
+  animation: soundWave 0.75s ease-in-out infinite;
+}
+
+/* 3D Parallax Layer System */
+.tilt-container {
+  perspective: 1500px !important;
+  transform-style: preserve-3d !important;
+  will-change: transform;
+}
+
+.tilt-layer-bg {
+  transform: translate3d(0, 0, -10px) !important;
+  transform-style: preserve-3d !important;
+  will-change: transform;
+}
+
+.tilt-layer-content {
+  transform: translate3d(0, 0, 0px) !important;
+  transform-style: preserve-3d !important;
+  backface-visibility: hidden !important;
+  -webkit-font-smoothing: antialiased !important;
+  will-change: transform;
+}
+
+.tilt-layer-deco {
+  transform: translate3d(0, 0, 15px) !important;
+  transform-style: preserve-3d !important;
+  will-change: transform;
+}
+
+/* Card Marquee Moving Border System on Hover */
+.card-marquee-border {
+  position: relative;
+}
+
+.card-marquee-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px; /* Overlap and cover the original 1px border perfectly */
+  border-radius: inherit;
+  padding: 1.5px; /* Exact border thickness */
+  background: linear-gradient(
+    135deg,
+    #ff5357,
+    #00eefc,
+    #ffb3af,
+    #ff5357,
+    #00eefc
+  );
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease-in-out;
+  z-index: 5;
+  animation: slowMarqueeBorder 8s linear infinite; /* Keep running continuously for a smooth, jump-free fade-in */
+}
+
+.card-marquee-border:hover::before {
+  opacity: 1;
+}
+
+@keyframes slowMarqueeBorder {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 150% 150%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+/* 博客阅读态：关掉全局 CRT/扫描线/噪点，避免详情页明暗斑驳 */
+body.blog-reading-mode #crt-layer,
+body.blog-reading-mode #scanlines-layer,
+body.blog-reading-mode #noise-layer {
+  opacity: 0 !important;
+  visibility: hidden;
+}
+
+/* 博客阅读态：隐藏滚动条，避免左右出现干扰性滑轨 */
+.blog-reader-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.blog-reader-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* —— EXPLORE 按键提示：仅单键 / 单字闪动，不带动整块背景 —— */
+.explore-key-cap {
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.explore-key-cap--boot {
+  animation: exploreKeyCapBoot 0.48s steps(5) forwards;
+}
+
+.explore-key-label {
+  display: inline-block;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.explore-key-label--boot {
+  animation: exploreKeyLabelBoot 0.52s steps(5) forwards;
+}
+
+.explore-key-hints-connector {
+  opacity: 0;
+  transform-origin: center top;
+}
+
+.explore-key-hints-connector--boot {
+  animation: exploreKeyConnectorBoot 0.38s steps(4) forwards;
+}
+
+/* 单颗键帽：短促明暗 + 1px 位移，无 blur / 负片 / 裁切父级 */
+@keyframes exploreKeyCapBoot {
+  0% {
+    opacity: 0;
+    transform: translateY(3px) scale(0.9);
+  }
+  18% {
+    opacity: 0;
+  }
+  32% {
+    opacity: 1;
+    transform: translate(-1px, 0) scale(1);
+  }
+  48% {
+    opacity: 0.2;
+    transform: translate(2px, 1px);
+  }
+  64% {
+    opacity: 0.95;
+    transform: translate(0, 0);
+  }
+  78% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes exploreKeyLabelBoot {
+  0% {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+  25% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+    transform: translateX(-1px);
+  }
+  55% {
+    opacity: 0.15;
+    transform: translateX(2px);
+  }
+  72% {
+    opacity: 0.85;
+    transform: translateX(0);
+  }
+  86% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes exploreKeyConnectorBoot {
+  0%,
+  30% {
+    opacity: 0;
+    transform: scaleY(0.2);
+  }
+  55% {
+    opacity: 0.5;
+    transform: scaleY(0.7);
+  }
+  100% {
+    opacity: 0.7;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes exploreSceneIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+

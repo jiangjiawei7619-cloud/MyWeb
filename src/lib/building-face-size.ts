@@ -51,8 +51,11 @@ export function getCameraDistanceToFitPanel(
   panelHeight: number,
   fov: number,
   margin = 1.15,
+  viewportAspect = 16 / 9,
 ): number {
-  const maxSize = Math.max(panelWidth, panelHeight);
-  const fovRad = THREE.MathUtils.degToRad(fov);
-  return (maxSize / 2 / Math.tan(fovRad / 2)) * margin;
+  const vFovRad = THREE.MathUtils.degToRad(fov);
+  const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * viewportAspect);
+  const distForHeight = panelHeight / 2 / Math.tan(vFovRad / 2);
+  const distForWidth = panelWidth / 2 / Math.tan(hFovRad / 2);
+  return Math.max(distForHeight, distForWidth) * margin;
 }

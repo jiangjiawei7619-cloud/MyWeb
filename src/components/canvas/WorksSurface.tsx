@@ -44,9 +44,9 @@ export default function WorksSurface() {
       >
         <planeGeometry args={[layout.panelWidth, layout.panelHeight]} />
         <meshBasicMaterial
-          color="#050508"
+          color="#0a0812"
           transparent
-          opacity={0.88}
+          opacity={0.94}
           toneMapped={false}
           depthWrite={false}
         />
@@ -54,10 +54,12 @@ export default function WorksSurface() {
 
       <Html
         transform
+        center
         occlude={false}
         position={layout.panelPosition}
         rotation={layout.panelRotation}
         scale={layout.htmlScale}
+        distanceFactor={layout.htmlDistanceFactor}
         zIndexRange={[35, 0]}
         style={{ pointerEvents: 'auto' }}
       >
@@ -76,6 +78,7 @@ export default function WorksSurface() {
             style={{
               width: `${layout.designWidth}px`,
               height: `${layout.designHeight}px`,
+              ['--works-cover-scale' as string]: String(layout.contentCoverScale),
             }}
           >
             <WorksContent />
@@ -125,8 +128,9 @@ export default function WorksSurface() {
               </div>
               <div>
                 dom {layout.panelPxWidth.toFixed(0)} × {layout.panelPxHeight.toFixed(0)} px · scale{' '}
-                {layout.htmlScale.toFixed(5)}
+                {layout.htmlScale.toFixed(5)} · df {layout.htmlDistanceFactor}
               </div>
+              <div>contentCoverScale {layout.contentCoverScale.toFixed(3)}</div>
               <div>offset {layout.surfaceOffset} m</div>
             </div>
           </Html>

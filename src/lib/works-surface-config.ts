@@ -22,6 +22,13 @@ export const WORKS_SURFACE_CONFIG = {
   surfaceOffset: 0.06,
   designWidth: 1200,
   designHeight: 760,
+  /**
+   * drei Html transform 默认 distanceFactor=10 → CSS 矩阵再除 (10/400)，
+   * 会把面板缩小约 40×。设为 400 后 scale 与 world unit 1:1 对齐。
+   */
+  htmlDistanceFactor: 400,
+  /** 内容在面板内 contain 缩放（0.98 = 留 2% 内边距） */
+  contentFill: 0.98,
   worksFov: 38,
   cameraFitMargin: 1.15,
   cameraVerticalOffset: 0.4,
@@ -34,6 +41,9 @@ export type WorksSurfaceLayout = {
   panelPxWidth: number;
   panelPxHeight: number;
   htmlScale: number;
+  htmlDistanceFactor: number;
+  /** Uniform CSS scale — contain 时贴满面宽，竖长 C 面上下留 cyber 边 */
+  contentCoverScale: number;
   designWidth: number;
   designHeight: number;
   faceMargin: number;
@@ -54,10 +64,14 @@ export function computeWorksSurfaceLayout(
   const panelWidth = face.width * config.faceMargin;
   const panelHeight = face.height * config.faceMargin;
 
-  /** Html transform：world = px × scale；宽度贴满面宽 */
-  const htmlScale = panelWidth / config.designWidth;
+  /** Html transform：world = px × group.scale（需配合 htmlDistanceFactor=400） */
   const panelPxWidth = config.designWidth;
+  const htmlScale = panelWidth / panelPxWidth;
   const panelPxHeight = panelHeight / htmlScale;
+  const contentCoverScale = Math.min(
+    (panelPxWidth * config.contentFill) / config.designWidth,
+    (panelPxHeight * config.contentFill) / config.designHeight,
+  );
 
   const panelPositionVec = face.center
     .clone()
@@ -89,6 +103,8 @@ export function computeWorksSurfaceLayout(
     panelPxWidth,
     panelPxHeight,
     htmlScale,
+    htmlDistanceFactor: config.htmlDistanceFactor,
+    contentCoverScale,
     designWidth: config.designWidth,
     designHeight: config.designHeight,
     faceMargin: config.faceMargin,

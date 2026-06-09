@@ -51,6 +51,8 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 83, 87, 0.45) transparent;
+  transform: scale(var(--works-cover-scale, 1));
+  transform-origin: center center;
 }
 
 .works-content-world-mode .works-content-root > .tilt-container {
@@ -75,8 +77,8 @@
 
 .works-content-world-mode .works-content-root [class*='h-[280px]'],
 .works-content-world-mode .works-content-root [class*='h-[360px]'] {
-  height: 220px !important;
-  min-height: 200px;
+  height: min(42vh, 520px) !important;
+  min-height: 280px;
 }
 
 .works-fit-debug-label {

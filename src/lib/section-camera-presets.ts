@@ -1,4 +1,5 @@
 import type { ActivePage } from '@/lib/types';
+import { computeWorksSurfaceLayout } from '@/lib/works-surface-config';
 
 export type SectionCameraPreset = {
   position: [number, number, number];
@@ -8,16 +9,27 @@ export type SectionCameraPreset = {
 
 export const DEBUG_BUILDING_ANCHORS = false;
 
+const _worksLayout = computeWorksSurfaceLayout();
+
 export const BUILDING08_C_ANCHOR = {
   id: 'building08:C',
-  face: '+Z',
-  center: [-45.76092846846935, 8.71308950020466, -37.16607902236311] as [number, number, number],
-  normal: [0, 0, 1] as [number, number, number],
-  panelPosition: [-45.76092846846935, 8.71308950020466, -36.98607902236311] as [number, number, number],
-  panelRotation: [0, 0, 0] as [number, number, number],
-  panelScale: 0.0062,
-  cameraPosition: [-45.76092846846935, 9.15308950020466, -29.96607902236311] as [number, number, number],
-  cameraTarget: [-45.76092846846935, 8.91308950020466, -37.16607902236311] as [number, number, number],
+  face: '+Z' as const,
+  faceSize: _worksLayout.faceSize,
+  center: _worksLayout.faceCenter,
+  normal: _worksLayout.normal,
+  panelPosition: _worksLayout.panelPosition,
+  panelRotation: _worksLayout.panelRotation,
+  panelWidth: _worksLayout.panelWidth,
+  panelHeight: _worksLayout.panelHeight,
+  panelPxWidth: _worksLayout.panelPxWidth,
+  panelPxHeight: _worksLayout.panelPxHeight,
+  htmlScale: _worksLayout.htmlScale,
+  designWidth: _worksLayout.designWidth,
+  designHeight: _worksLayout.designHeight,
+  faceMargin: _worksLayout.faceMargin,
+  surfaceOffset: _worksLayout.surfaceOffset,
+  cameraPosition: _worksLayout.cameraPosition,
+  cameraTarget: _worksLayout.cameraTarget,
 } as const;
 
 export const SECTION_CAMERA_PRESETS: Record<ActivePage, SectionCameraPreset> = {

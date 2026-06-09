@@ -8,7 +8,6 @@ import LogsSection from '@/components/sections/LogsSection';
 import FooterShell from '@/components/layout/FooterShell';
 import FirstPersonScene from '@/components/canvas/FirstPersonScene';
 import LoadingScreen from '@/components/loading/LoadingScreen';
-import ViewTransitionOverlay, { type ViewTransitionPhase } from '@/components/transitions/ViewTransitionOverlay';
 import { preloadExploreWorldAssets } from '@/lib/explore-world-preload';
 
 function shouldSkipInitialLoading(): boolean {
@@ -23,10 +22,6 @@ function shouldSkipInitialLoading(): boolean {
   );
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
 export default function App() {
   const skipInitialLoading = shouldSkipInitialLoading();
   const [showLoading, setShowLoading] = useState(!skipInitialLoading);
@@ -34,8 +29,6 @@ export default function App() {
   const [introActive, setIntroActive] = useState(false);
   const [introDone, setIntroDone] = useState(skipInitialLoading);
   const [activePage, setActivePage] = useState<ActivePage>('EXPLORE');
-  const [transitionPhase, setTransitionPhase] = useState<ViewTransitionPhase>('idle');
-  const transitionRunRef = useRef(0);
   
   // Custom states for interactive elements
   
@@ -142,28 +135,11 @@ export default function App() {
   }, []);
 
   const navigateToPage = useCallback(
-    async (page: ActivePage) => {
-      if (page === activePage && transitionPhase === 'idle') return;
-
-      if (page !== 'WORKS') {
-        transitionRunRef.current += 1;
-        setTransitionPhase('idle');
-        setActivePage(page);
-        return;
-      }
-
-      const runId = transitionRunRef.current + 1;
-      transitionRunRef.current = runId;
-      setTransitionPhase('enter');
-      await wait(320);
-      if (transitionRunRef.current !== runId) return;
-      setActivePage('WORKS');
-      setTransitionPhase('exit');
-      await wait(420);
-      if (transitionRunRef.current !== runId) return;
-      setTransitionPhase('idle');
+    (page: ActivePage) => {
+      if (page === activePage) return;
+      setActivePage(page);
     },
-    [activePage, transitionPhase],
+    [activePage],
   );
 
   // Global keydown listener for Arrow Up/Down/Left/Right tab transitions
@@ -228,6 +204,7 @@ export default function App() {
       interactive={activePage === 'EXPLORE' && introDone}
       introActive={introActive}
       onIntroComplete={handleIntroComplete}
+      activeSection={activePage}
     />
 
     {showLoading && (
@@ -335,7 +312,6 @@ export default function App() {
       </div>
 
     </motion.div>
-    <ViewTransitionOverlay phase={transitionPhase} />
   </>
   );
 }

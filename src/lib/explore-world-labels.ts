@@ -128,13 +128,32 @@ function offsetFaceCenter(
   return center.clone().addScaledVector(_faceNormal, offset);
 }
 
-function buildingFaceSpecs(b: ExploreBuilding): {
+export type BuildingFaceLetter = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
+
+export type BuildingFaceSpec = {
   face: BuildingFaceId;
   center: THREE.Vector3;
   rotation: THREE.Euler;
   width: number;
   height: number;
-}[] {
+};
+
+export function getBuildingFaceSpecs(b: ExploreBuilding): BuildingFaceSpec[] {
+  return buildingFaceSpecs(b);
+}
+
+export function getBuildingFaceByLetter(
+  b: ExploreBuilding,
+  face: BuildingFaceLetter,
+): BuildingFaceSpec {
+  const index = BUILDING_FACE_LETTERS.indexOf(face);
+  if (index < 0) throw new Error(`Unknown face letter: ${face}`);
+  const spec = buildingFaceSpecs(b)[index];
+  if (!spec) throw new Error(`Face ${face} not found on building`);
+  return spec;
+}
+
+function buildingFaceSpecs(b: ExploreBuilding): BuildingFaceSpec[] {
   const cx = b.x;
   const cy = b.yBase + b.h / 2;
   const cz = b.z;

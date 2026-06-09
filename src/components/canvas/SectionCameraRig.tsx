@@ -25,12 +25,6 @@ type CameraTransition = {
   endFov: number;
 };
 
-function targetFromCamera(camera: THREE.Camera, out: THREE.Vector3) {
-  camera.getWorldDirection(out);
-  out.multiplyScalar(12).add(camera.position);
-  return out;
-}
-
 export default function SectionCameraRig({ activeSection, introActive }: SectionCameraRigProps) {
   const { camera } = useThree();
   const basePositionRef = useRef(new THREE.Vector3());

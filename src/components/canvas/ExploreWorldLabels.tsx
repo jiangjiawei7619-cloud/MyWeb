@@ -1,10 +1,7 @@
 import { memo, useMemo } from 'react';
 import { Billboard, Text } from '@react-three/drei';
-import * as THREE from 'three';
 import type { ExploreBuilding, ExploreNeonSign } from '@/lib/explore-city-layout';
 import {
-  appendLocalAxes,
-  axisLengthForSize,
   buildBuildingFaceLabels,
   buildBuildingLabelTargets,
   buildPosterFaceLabels,
@@ -20,41 +17,6 @@ type ExploreWorldLabelsProps = {
   buildings: ExploreBuilding[];
   signs: ExploreNeonSign[];
 };
-
-function MergedLocalAxes({ targets }: { targets: WorldLabelTarget[] }) {
-  const geometry = useMemo(() => {
-    const positions: number[] = [];
-    const colors: number[] = [];
-    const dummy = new THREE.Object3D();
-
-    for (const target of targets) {
-      dummy.position.copy(target.position);
-      dummy.rotation.copy(target.rotation);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      appendLocalAxes(positions, colors, dummy.matrix, axisLengthForSize(target.size, target.kind));
-    }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    return geo;
-  }, [targets]);
-
-  const material = useMemo(
-    () =>
-      new THREE.LineBasicMaterial({
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.92,
-        depthTest: true,
-        toneMapped: false,
-      }),
-    [],
-  );
-
-  return <lineSegments geometry={geometry} material={material} renderOrder={48} frustumCulled={false} />;
-}
 
 const LabelBillboard = memo(function LabelBillboard({ target }: { target: WorldLabelTarget }) {
   const fontSize = fontSizeForSize(target.size);
@@ -124,7 +86,6 @@ function ExploreWorldLabelsInner({ buildings, signs }: ExploreWorldLabelsProps) 
 
   return (
     <group name="explore-world-labels">
-      <MergedLocalAxes targets={allTargets} />
       {allTargets.map((target) => (
         <LabelBillboard key={target.id} target={target} />
       ))}

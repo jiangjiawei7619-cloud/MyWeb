@@ -1,15 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ActivePage } from '@/lib/types';
-import { INITIAL_PROJECTS, INITIAL_LOGS } from '@/lib/data';
 import { playJumpSound, installAudioUnlockListeners, installAudioVisibilityListeners, enterAboutFocusMode, exitAboutFocusMode } from '@/utils/audio';
 import TopAppBar from '@/components/layout/TopAppBar';
-import WorksSection from '@/components/sections/WorksSection';
 import AboutSection from '@/components/sections/AboutSection';
 import LogsSection from '@/components/sections/LogsSection';
 import FooterShell from '@/components/layout/FooterShell';
 import FirstPersonScene from '@/components/canvas/FirstPersonScene';
 import LoadingScreen from '@/components/loading/LoadingScreen';
+import ViewTransitionOverlay, { type ViewTransitionPhase } from '@/components/transitions/ViewTransitionOverlay';
 import { preloadExploreWorldAssets } from '@/lib/explore-world-preload';
 
 function shouldSkipInitialLoading(): boolean {
@@ -24,6 +23,10 @@ function shouldSkipInitialLoading(): boolean {
   );
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 export default function App() {
   const skipInitialLoading = shouldSkipInitialLoading();
   const [showLoading, setShowLoading] = useState(!skipInitialLoading);
@@ -31,7 +34,8 @@ export default function App() {
   const [introActive, setIntroActive] = useState(false);
   const [introDone, setIntroDone] = useState(skipInitialLoading);
   const [activePage, setActivePage] = useState<ActivePage>('EXPLORE');
-  const logs = INITIAL_LOGS;
+  const [transitionPhase, setTransitionPhase] = useState<ViewTransitionPhase>('idle');
+  const transitionRunRef = useRef(0);
   
   // Custom states for interactive elements
   
@@ -137,6 +141,31 @@ export default function App() {
     return () => clearInterval(flickerInterval);
   }, []);
 
+  const navigateToPage = useCallback(
+    async (page: ActivePage) => {
+      if (page === activePage && transitionPhase === 'idle') return;
+
+      if (page !== 'WORKS') {
+        transitionRunRef.current += 1;
+        setTransitionPhase('idle');
+        setActivePage(page);
+        return;
+      }
+
+      const runId = transitionRunRef.current + 1;
+      transitionRunRef.current = runId;
+      setTransitionPhase('enter');
+      await wait(320);
+      if (transitionRunRef.current !== runId) return;
+      setActivePage('WORKS');
+      setTransitionPhase('exit');
+      await wait(420);
+      if (transitionRunRef.current !== runId) return;
+      setTransitionPhase('idle');
+    },
+    [activePage, transitionPhase],
+  );
+
   // Global keydown listener for Arrow Up/Down/Left/Right tab transitions
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -156,19 +185,19 @@ export default function App() {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         e.preventDefault();
         const prevIndex = (currentIndex - 1 + PAGELIST.length) % PAGELIST.length;
-        setActivePage(PAGELIST[prevIndex]);
+        void navigateToPage(PAGELIST[prevIndex]);
         playJumpSound();
       } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
         e.preventDefault();
         const nextIndex = (currentIndex + 1) % PAGELIST.length;
-        setActivePage(PAGELIST[nextIndex]);
+        void navigateToPage(PAGELIST[nextIndex]);
         playJumpSound();
       }
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [activePage]);
+  }, [activePage, navigateToPage]);
 
   const handleLoadingFlashStart = useCallback(() => {
     setAppRevealed(true);
@@ -237,7 +266,9 @@ export default function App() {
       >
         <TopAppBar
           currentPage={activePage}
-          onPageChange={(p) => setActivePage(p)}
+          onPageChange={(p) => {
+            void navigateToPage(p);
+          }}
           hideStatusReadout={isLogsPage}
           showExploreKeyHints={appRevealed}
         />
@@ -246,12 +277,14 @@ export default function App() {
       {/* Dynamic Route views rendered inside centered main view box */}
       <main
         ref={mainRef}
-        className={`relative z-10 min-h-0 w-full flex-1 px-4 sm:px-6 md:px-12 lg:px-24 xl:px-44 flex flex-col justify-center overflow-y-auto pt-20 pb-28 md:pt-24 md:pb-32 ${
-          activePage === 'EXPLORE' ? 'pointer-events-none' : 'pointer-events-auto'
+        className={`relative z-10 min-h-0 w-full flex-1 px-4 sm:px-6 md:px-12 lg:px-20 xl:px-28 flex flex-col overflow-y-auto pb-28 md:pb-32 ${
+          activePage === 'LOGS' ? 'justify-start pt-28 md:pt-32' : 'justify-center pt-20 md:pt-24'
+        } ${
+          activePage === 'EXPLORE' || activePage === 'WORKS' ? 'pointer-events-none' : 'pointer-events-auto'
         }`}
       >
         <div
-          className={`w-full max-w-7xl mx-auto ${activePage === 'LOGS' ? 'overflow-visible' : 'overflow-hidden'}`}
+          className={`w-full mx-auto ${activePage === 'LOGS' ? 'max-w-[1500px] overflow-visible' : 'max-w-7xl overflow-hidden'}`}
         >
           <AnimatePresence mode="wait">
             <motion.div
@@ -262,16 +295,12 @@ export default function App() {
               exit={{ opacity: 0, x: -20, y: 0, filter: 'blur(0px)' }}
               transition={{ duration: 0.32, ease: [0.16, 1, 0.32, 1] }}
             >
-              {activePage === 'WORKS' && (
-                <WorksSection projects={INITIAL_PROJECTS} />
-              )}
-
               {activePage === 'ABOUT' && (
                 <AboutSection />
               )}
 
               {activePage === 'LOGS' && (
-                <LogsSection logs={logs} />
+                <LogsSection />
               )}
             </motion.div>
           </AnimatePresence>
@@ -292,20 +321,21 @@ export default function App() {
             const PAGELIST: ActivePage[] = ['EXPLORE', 'WORKS', 'LOGS', 'ABOUT'];
             const currentIndex = PAGELIST.indexOf(activePage);
             const prevIndex = (currentIndex - 1 + PAGELIST.length) % PAGELIST.length;
-            setActivePage(PAGELIST[prevIndex]);
+            void navigateToPage(PAGELIST[prevIndex]);
             playJumpSound();
           }}
           onNext={() => {
             const PAGELIST: ActivePage[] = ['EXPLORE', 'WORKS', 'LOGS', 'ABOUT'];
             const currentIndex = PAGELIST.indexOf(activePage);
             const nextIndex = (currentIndex + 1) % PAGELIST.length;
-            setActivePage(PAGELIST[nextIndex]);
+            void navigateToPage(PAGELIST[nextIndex]);
             playJumpSound();
           }}
         />
       </div>
 
     </motion.div>
+    <ViewTransitionOverlay phase={transitionPhase} />
   </>
   );
 }

@@ -42,12 +42,32 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
   uniform float uReflectAlphaFloor;
   uniform float uReflectBlurScale;
   uniform vec3 uCamPos;
+  uniform float uSignalDropoutT;
+  uniform float uSignalDropoutSteps;
+  uniform float uSignalDropoutBands;
+  uniform float uSignalDropoutStrength;
 
   varying vec2 vUv;
   varying vec3 vWorldPos;
 
+  float hash21Clean(vec2 p) {
+    return fract(sin(dot(p, vec2(43.17, 291.73))) * 43758.5453);
+  }
+
   void main() {
-    vec4 tex = texture2D(uMap, vUv);
+    float dropoutStep = floor(uSignalDropoutT * uSignalDropoutSteps);
+    float band = floor(vUv.y * uSignalDropoutBands);
+    float bandRand = hash21Clean(vec2(band, dropoutStep + 19.0));
+    float activeBand = step(0.42, bandRand);
+    float thinSlice = step(0.78, fract(vUv.y * uSignalDropoutBands + bandRand));
+    float signalShift =
+      (hash21Clean(vec2(band + 3.0, dropoutStep + 7.0)) - 0.5) *
+      uSignalDropoutStrength *
+      uSignalDropoutT *
+      activeBand;
+    vec2 signalUv = vUv + vec2(signalShift, 0.0);
+
+    vec4 tex = texture2D(uMap, signalUv);
     float lum = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
     float alpha = smoothstep(0.035, 0.14, lum) * tex.a;
     if (alpha < 0.02) discard;
@@ -73,10 +93,10 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
 
       // 霓虹溢光 — 轻 blur 采样 + 边缘光晕（仅本体）
       vec2 texel = vec2(0.0018, 0.0018);
-      vec3 s0 = texture2D(uMap, vUv + vec2(texel.x, 0.0)).rgb;
-      vec3 s1 = texture2D(uMap, vUv - vec2(texel.x, 0.0)).rgb;
-      vec3 s2 = texture2D(uMap, vUv + vec2(0.0, texel.y)).rgb;
-      vec3 s3 = texture2D(uMap, vUv - vec2(0.0, texel.y)).rgb;
+      vec3 s0 = texture2D(uMap, signalUv + vec2(texel.x, 0.0)).rgb;
+      vec3 s1 = texture2D(uMap, signalUv - vec2(texel.x, 0.0)).rgb;
+      vec3 s2 = texture2D(uMap, signalUv + vec2(0.0, texel.y)).rgb;
+      vec3 s3 = texture2D(uMap, signalUv - vec2(0.0, texel.y)).rgb;
       vec3 soft = (tex.rgb + s0 + s1 + s2 + s3) * 0.2;
       float softLum = dot(soft, vec3(0.299, 0.587, 0.114));
       float halo = smoothstep(0.05, 0.32, softLum) * emissiveMask;
@@ -98,11 +118,16 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
       }
     }
     float a = alpha * uOpacity * tone * uMix;
+    float dropoutCut = activeBand * thinSlice * uSignalDropoutT;
+    col *= 1.0 - dropoutCut * 0.28;
+    a *= 1.0 - dropoutCut * 0.34;
 
     if (uReflect > 0.5) {
       col = tex.rgb * uBrightness * tone * uReflectDimmer;
       float emissiveMask = smoothstep(0.16, 0.68, lum);
       a = max(a, emissiveMask * uReflectAlphaFloor) * uReflectDimmer;
+      col *= 1.0 - dropoutCut * 0.2;
+      a *= 1.0 - dropoutCut * 0.22;
 
       float belowGround = max(0.0, -vWorldPos.y);
       float groundAlphaFade = 1.0 - smoothstep(0.0, uReflectFadeDepth, belowGround);

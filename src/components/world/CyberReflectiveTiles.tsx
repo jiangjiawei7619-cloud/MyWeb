@@ -239,7 +239,6 @@ function CyberReflectiveTilesInner({
   }, [ensureMaterialPatched, preset.resolution, params.blurStrength]);
 
   useFrame(({ clock }) => {
-    ensureMaterialPatched();
     cyberUniformsRef.current.uTime.value = clock.elapsedTime;
   });
 

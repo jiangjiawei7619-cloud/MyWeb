@@ -16,7 +16,7 @@ export default function ExploreNeonEnvironment() {
           intensity={s.intensity}
           position={s.position}
           rotation-y={s.rotationY}
-          scale={s.scale}
+          scale={[...s.scale]}
         />
       ))}
       <Lightformer

@@ -1,5 +1,6 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { AdaptiveDpr } from '@react-three/drei';
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { createPhysicsWorld, GROUND_HALF_EXTENT, type PhysicsWorldBundle } from '@/physics/createPhysicsWorld';
@@ -12,7 +13,13 @@ import ExploreToneMapping from '@/components/canvas/ExploreToneMapping';
 import ExploreCyberCity from '@/components/canvas/ExploreCyberCity';
 import ExploreWorldAtmosphere from '@/components/canvas/ExploreWorldAtmosphere';
 import ExplorePostEffects from '@/components/canvas/ExplorePostEffects';
+import ExploreBuilding01SignalHologram from '@/components/canvas/ExploreBuilding01SignalHologram';
+import ExploreBuild04Hologram from '@/components/canvas/ExploreBuild04Hologram';
+import ExploreBuilding27Hologram from '@/components/canvas/ExploreBuilding27Hologram';
 import ExploreRebeccaHologram from '@/components/canvas/ExploreRebeccaHologram';
+import SectionCameraRig from '@/components/canvas/SectionCameraRig';
+import WorksSurface from '@/components/canvas/WorksSurface';
+import type { ActivePage } from '@/lib/types';
 import ExploreIntroCamera, {
   EXPLORE_INTRO_CAMERA_FOV,
   EXPLORE_INTRO_CAMERA_START,
@@ -81,6 +88,7 @@ function PhysicsLoop({
     const bundle = bundleRef.current;
     if (!controller || !bundle || !(camera instanceof THREE.PerspectiveCamera)) return;
     if (introActiveRef.current) return;
+    if (!interactive) return;
 
     accumulatorRef.current += Math.min(delta, 0.1);
     while (accumulatorRef.current >= FIXED_TIMESTEP) {
@@ -96,6 +104,32 @@ function PhysicsLoop({
   return null;
 }
 
+function MotionDprRegressor() {
+  const { camera, performance } = useThree();
+  const lastPositionRef = useRef(new THREE.Vector3());
+  const lastQuaternionRef = useRef(new THREE.Quaternion());
+  const initializedRef = useRef(false);
+
+  useFrame(() => {
+    if (!initializedRef.current) {
+      lastPositionRef.current.copy(camera.position);
+      lastQuaternionRef.current.copy(camera.quaternion);
+      initializedRef.current = true;
+      return;
+    }
+
+    const positionDeltaSq = lastPositionRef.current.distanceToSquared(camera.position);
+    const rotationDelta = 1 - Math.abs(lastQuaternionRef.current.dot(camera.quaternion));
+    if (positionDeltaSq > 0.00002 || rotationDelta > 0.000002) {
+      performance.regress();
+      lastPositionRef.current.copy(camera.position);
+      lastQuaternionRef.current.copy(camera.quaternion);
+    }
+  });
+
+  return null;
+}
+
 function SceneContent({
   bundleRef,
   controllerRef,
@@ -103,6 +137,7 @@ function SceneContent({
   physicsReady,
   introActive,
   onIntroComplete,
+  activeSection,
 }: {
   bundleRef: React.RefObject<PhysicsWorldBundle | null>;
   controllerRef: React.RefObject<FirstPersonController | null>;
@@ -110,6 +145,7 @@ function SceneContent({
   physicsReady: boolean;
   introActive: boolean;
   onIntroComplete: () => void;
+  activeSection: ActivePage;
 }) {
   const introActiveRef = useRef(introActive);
   introActiveRef.current = introActive;
@@ -119,9 +155,16 @@ function SceneContent({
       <ExploreWorldAtmosphere />
       <ExploreSceneLighting />
       <ExploreToneMapping />
+      <AdaptiveDpr pixelated={false} />
+      <MotionDprRegressor />
+      <SectionCameraRig activeSection={activeSection} introActive={introActive} />
       <ExploreCyberCity />
+      <WorksSurface />
       <Suspense fallback={null}>
         <ExploreRebeccaHologram />
+        <ExploreBuilding01SignalHologram />
+        <ExploreBuild04Hologram />
+        <ExploreBuilding27Hologram />
       </Suspense>
       {physicsReady && bundleRef.current && (
         <ExploreGroundReflection bundleRef={bundleRef} />
@@ -157,6 +200,7 @@ function FirstPersonCanvas({
   physicsReady,
   introActive,
   onIntroComplete,
+  activeSection,
 }: {
   bundleRef: React.RefObject<PhysicsWorldBundle | null>;
   controllerRef: React.RefObject<FirstPersonController | null>;
@@ -164,6 +208,7 @@ function FirstPersonCanvas({
   physicsReady: boolean;
   introActive: boolean;
   onIntroComplete: () => void;
+  activeSection: ActivePage;
 }) {
   const dprMax = useMemo(() => getPerformancePreset(detectPerformanceTier()).dprMax, []);
 
@@ -182,6 +227,7 @@ function FirstPersonCanvas({
         alpha: false,
         powerPreference: 'high-performance',
       }}
+      performance={{ min: 0.72, max: 1, debounce: 360 }}
     >
       <SceneContent
         bundleRef={bundleRef}
@@ -190,6 +236,7 @@ function FirstPersonCanvas({
         physicsReady={physicsReady}
         introActive={introActive}
         onIntroComplete={onIntroComplete}
+        activeSection={activeSection}
       />
     </Canvas>
   );
@@ -208,10 +255,12 @@ export default function FirstPersonScene({
   interactive = true,
   introActive = false,
   onIntroComplete,
+  activeSection = 'EXPLORE',
 }: {
   interactive?: boolean;
   introActive?: boolean;
   onIntroComplete?: () => void;
+  activeSection?: ActivePage;
 }) {
   const bundleRef = useRef<PhysicsWorldBundle | null>(null);
   const controllerRef = useRef<FirstPersonController | null>(null);
@@ -248,6 +297,7 @@ export default function FirstPersonScene({
   const handleIntroComplete = useCallback(() => {
     onIntroComplete?.();
   }, [onIntroComplete]);
+  const canvasPointerEnabled = interactive || activeSection === 'WORKS';
 
   if (error) {
     return (
@@ -260,7 +310,9 @@ export default function FirstPersonScene({
   return (
     <div
       className={`fixed inset-0 z-[5] ${
-        interactive ? 'cursor-grab active:cursor-grabbing touch-none select-none' : 'pointer-events-none'
+        canvasPointerEnabled
+          ? `${interactive ? 'cursor-grab active:cursor-grabbing touch-none' : ''} select-none`
+          : 'pointer-events-none'
       }`}
     >
       <FirstPersonCanvas
@@ -270,6 +322,7 @@ export default function FirstPersonScene({
         physicsReady={ready}
         introActive={introActive}
         onIntroComplete={handleIntroComplete}
+        activeSection={activeSection}
       />
     </div>
   );

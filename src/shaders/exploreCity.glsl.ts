@@ -92,6 +92,14 @@ export const exploreCityBuildingFrag = /* glsl */ `
   uniform vec3 uBandPurple;
   uniform vec3 uBandCyan;
   uniform vec3 uBandMagenta;
+  uniform float uDistanceFadeStart;
+  uniform float uDistanceFadeEnd;
+  uniform float uLod1Start;
+  uniform float uLod1End;
+  uniform float uLod2Start;
+  uniform float uLod2End;
+  uniform vec3 uFarFogColor;
+  uniform float uFarFogDensity;
 
   varying vec3 vPos;
   varying vec3 vNormal;
@@ -103,6 +111,15 @@ export const exploreCityBuildingFrag = /* glsl */ `
 
   float hash(float n) { return fract(sin(n) * 43758.5453123); }
   float hash21(vec2 p) { return fract(sin(dot(p, vec2(41.31, 289.17))) * 43758.5453); }
+
+  float distanceFade(float d) {
+    return 1.0 - smoothstep(uDistanceFadeStart, uDistanceFadeEnd, d);
+  }
+
+  float farFogAmount(float d) {
+    float fog = 1.0 - exp(-d * uFarFogDensity);
+    return clamp(fog, 0.0, 1.0);
+  }
 
   float brickSeamMask(vec2 xz) {
     return 0.0;
@@ -219,6 +236,11 @@ export const exploreCityBuildingFrag = /* glsl */ `
   void main() {
     vec3 n = normalize(vNormal);
     vec3 viewDir = normalize(uCamPos - vWorldPos);
+    float depth = length(vWorldPos - uCamPos);
+    float distFade = distanceFade(depth);
+    if (distFade <= 0.002) discard;
+    float lod1Mix = smoothstep(uLod1Start, uLod1End, depth);
+    float lod2Mix = smoothstep(uLod2Start, uLod2End, depth);
     vec3 col = vec3(0.002, 0.001, 0.003);
 
     vec2 sideFace = abs(n.x) > 0.5 ? vec2(vPos.z, vPos.y) : vec2(vPos.x, vPos.y);
@@ -264,25 +286,31 @@ export const exploreCityBuildingFrag = /* glsl */ `
         col = mix(col, col * 0.68, seamMask * 0.42);
       }
       col *= uIntensity;
-      float depth = length(vWorldPos - uCamPos);
       col = mix(col, uFog, blurMix);
-      col = mix(col, uFog, smoothstep(28.0, 150.0, depth) * 0.24);
+      col = mix(col, uFarFogColor, farFogAmount(depth));
+      col *= distFade;
       float alphaBase = fade * mix(0.82, 0.98, mirrorFresnel);
       float alphaMask = uReflectSurfacePass > 0.5
         ? mix(1.0, 0.14, seamMask)
         : mix(0.34, 1.0, seamMask);
-      gl_FragColor = vec4(col, alphaBase * alphaMask);
+      gl_FragColor = vec4(col, alphaBase * alphaMask * distFade);
       return;
     }
 
+    vec3 fullCol = col;
     col += lightBands * uBandIntensity;
     col *= mix(0.55, 1.0, smoothstep(2.0, 8.0, vWorldPos.y));
     col *= uIntensity;
 
-    float depth = length(vWorldPos - uCamPos);
-    col = mix(col, uFog, smoothstep(75.0, 195.0, depth) * 0.72);
+    vec3 simplified = fullCol + lightBands * uBandIntensity * 0.45;
+    simplified *= mix(0.5, 0.9, smoothstep(2.0, 8.0, vWorldPos.y)) * uIntensity;
+    vec3 outline = edgeNeonTint(vSeed) * (edgeGlow * 2.4 + length(lightBands) * 0.28) * uIntensity;
+    col = mix(col, simplified, lod1Mix);
+    col = mix(col, outline, lod2Mix);
+    col *= distFade;
+    col = mix(col, uFarFogColor, farFogAmount(depth));
 
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(col, distFade);
   }
 `;
 
@@ -290,10 +318,13 @@ export const exploreCityAntennaVert = /* glsl */ `
   attribute float aSeed;
   varying vec3 vPos;
   varying float vSeed;
+  varying vec3 vWorldPos;
   void main() {
     vPos = position;
     vSeed = aSeed;
-    gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+    vec4 wp = instanceMatrix * vec4(position, 1.0);
+    vWorldPos = (modelMatrix * wp).xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * wp;
   }
 `;
 
@@ -301,13 +332,24 @@ export const exploreCityAntennaFrag = /* glsl */ `
   precision highp float;
   uniform float uTime;
   uniform vec3 uAmber;
+  uniform vec3 uCamPos;
+  uniform float uDistanceFadeStart;
+  uniform float uDistanceFadeEnd;
+  uniform vec3 uFarFogColor;
+  uniform float uFarFogDensity;
   varying vec3 vPos;
   varying float vSeed;
+  varying vec3 vWorldPos;
   void main() {
+    float d = length(vWorldPos - uCamPos);
+    float fade = 1.0 - smoothstep(uDistanceFadeStart, uDistanceFadeEnd, d);
+    if (fade <= 0.002) discard;
     float tip = smoothstep(0.35, 0.5, vPos.y);
     float blink = 0.4 + 0.6 * pow(0.5 + 0.5 * sin(uTime * 3.0 + vSeed * 20.0), 3.0);
     vec3 col = vec3(0.002, 0.001, 0.003) + uAmber * tip * blink * 0.55;
-    gl_FragColor = vec4(col, 1.0);
+    float fog = clamp(1.0 - exp(-d * uFarFogDensity), 0.0, 1.0);
+    col = mix(col * fade, uFarFogColor, fog);
+    gl_FragColor = vec4(col, fade);
   }
 `;
 
@@ -315,10 +357,13 @@ export const exploreCityPoolVert = /* glsl */ `
   attribute float aHeight;
   varying vec2 vUv;
   varying float vH;
+  varying vec3 vWorldPos;
   void main() {
     vUv = uv;
     vH = aHeight;
-    gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+    vec4 wp = instanceMatrix * vec4(position, 1.0);
+    vWorldPos = (modelMatrix * wp).xyz;
+    gl_Position = projectionMatrix * modelViewMatrix * wp;
   }
 `;
 
@@ -326,28 +371,46 @@ export const exploreCityPoolFrag = /* glsl */ `
   precision highp float;
   uniform float uTime;
   uniform vec3 uColor;
+  uniform vec3 uCamPos;
+  uniform float uDistanceFadeStart;
+  uniform float uDistanceFadeEnd;
+  uniform vec3 uFarFogColor;
+  uniform float uFarFogDensity;
   varying vec2 vUv;
   varying float vH;
+  varying vec3 vWorldPos;
   void main() {
+    float d = length(vWorldPos - uCamPos);
+    float fade = 1.0 - smoothstep(uDistanceFadeStart, uDistanceFadeEnd, d);
+    if (fade <= 0.002) discard;
     vec2 p = vUv - 0.5;
     float r = length(p) * 2.0;
     float glow = pow(smoothstep(1.0, 0.0, r), 2.2);
     float pulse = 0.85 + 0.15 * sin(uTime * 1.5 + vH);
     float inten = clamp(vH * 0.04, 0.2, 1.0);
-    gl_FragColor = vec4(uColor * glow * pulse * inten, glow * 0.45 * inten);
+    vec3 col = uColor * glow * pulse * inten * fade;
+    float fog = clamp(1.0 - exp(-d * uFarFogDensity), 0.0, 1.0);
+    col = mix(col, uFarFogColor, fog);
+    gl_FragColor = vec4(col, glow * 0.45 * inten * fade);
   }
 `;
 
 export const exploreNeonSignVert = /* glsl */ `
   attribute vec3 aColor;
+  attribute vec2 aAtlasUvOffset;
+  attribute vec2 aAtlasUvScale;
+  attribute vec3 aSignPerf;
   attribute float aSeed;
-  attribute float aPosterIndex;
-  attribute float aGlitchEnabled;
-  attribute float aGlitchMode;
-  attribute float aGlitchInterval;
-  attribute float aGlitchPhase;
+  attribute vec2 aGlitchA;
+  attribute vec2 aGlitchB;
+  uniform float uAtlasCols;
   varying vec2 vUv;
   varying vec3 vColor;
+  varying vec2 vAtlasUvOffset;
+  varying vec2 vAtlasUvScale;
+  varying float vSignTier;
+  varying float vEmissiveIntensity;
+  varying float vFlickerSpeed;
   varying float vSeed;
   varying float vPosterIndex;
   varying float vGlitchEnabled;
@@ -358,12 +421,19 @@ export const exploreNeonSignVert = /* glsl */ `
   void main() {
     vUv = uv;
     vColor = aColor;
+    vAtlasUvOffset = aAtlasUvOffset;
+    vAtlasUvScale = aAtlasUvScale;
+    vSignTier = aSignPerf.x;
+    vEmissiveIntensity = aSignPerf.y;
+    vFlickerSpeed = aSignPerf.z;
     vSeed = aSeed;
-    vPosterIndex = aPosterIndex;
-    vGlitchEnabled = aGlitchEnabled;
-    vGlitchMode = aGlitchMode;
-    vGlitchInterval = aGlitchInterval;
-    vGlitchPhase = aGlitchPhase;
+    float atlasCol = floor(aAtlasUvOffset.x / max(aAtlasUvScale.x, 0.0001) + 0.5);
+    float atlasRow = floor(aAtlasUvOffset.y / max(aAtlasUvScale.y, 0.0001) + 0.5);
+    vPosterIndex = atlasRow * uAtlasCols + atlasCol;
+    vGlitchEnabled = aGlitchA.x;
+    vGlitchMode = aGlitchA.y;
+    vGlitchInterval = aGlitchB.x;
+    vGlitchPhase = aGlitchB.y;
     vec4 wp = instanceMatrix * vec4(position, 1.0);
     vWorldPos = (modelMatrix * wp).xyz;
     gl_Position = projectionMatrix * modelViewMatrix * wp;
@@ -401,6 +471,14 @@ export const exploreNeonSignFrag = /* glsl */ `
   uniform float uSignBloomBoost;
   uniform float uSignOuterGlow;
   uniform float uReflectSurfacePass;
+  uniform float uDistanceFadeStart;
+  uniform float uDistanceFadeEnd;
+  uniform float uLod1Start;
+  uniform float uLod1End;
+  uniform float uLod2Start;
+  uniform float uLod2End;
+  uniform vec3 uFarFogColor;
+  uniform float uFarFogDensity;
   uniform float uBrickPitch;
   uniform float uBrickGap;
   uniform vec2 uBrickOrigin;
@@ -418,6 +496,11 @@ export const exploreNeonSignFrag = /* glsl */ `
 
   varying vec2 vUv;
   varying vec3 vColor;
+  varying vec2 vAtlasUvOffset;
+  varying vec2 vAtlasUvScale;
+  varying float vSignTier;
+  varying float vEmissiveIntensity;
+  varying float vFlickerSpeed;
   varying float vSeed;
   varying float vPosterIndex;
   varying float vGlitchEnabled;
@@ -430,14 +513,52 @@ export const exploreNeonSignFrag = /* glsl */ `
     return fract(sin(dot(p, vec2(41.31, 289.17))) * 43758.5453);
   }
 
+  float signDistanceFade(float d) {
+    return 1.0 - smoothstep(uDistanceFadeStart, uDistanceFadeEnd, d);
+  }
+
+  float signFarFogAmount(float d) {
+    return clamp(1.0 - exp(-d * uFarFogDensity), 0.0, 1.0);
+  }
+
   vec2 posterAtlasUV(vec2 panelUV, float idx) {
-    float col = mod(idx, uAtlasCols);
-    float row = floor(idx / uAtlasCols);
-    return (vec2(col, row) + panelUV) * uAtlasCell;
+    return vAtlasUvOffset + panelUV * vAtlasUvScale;
   }
 
   vec3 fetchPoster(vec2 panelUV, float idx) {
     return texture2D(uPosterAtlas, posterAtlasUV(panelUV, idx)).rgb;
+  }
+
+  vec3 microGlitchPoster09(vec2 panel, float idx, float intensity, float seed) {
+    float stepIdx = floor(uTime * 24.0 + seed);
+    float band = floor(panel.y * 42.0);
+    float bandRnd = hash21(vec2(band, stepIdx + seed * 0.17));
+    float activeBand = step(0.48, bandRnd);
+    float sliceShift = (hash21(vec2(band + 11.0, stepIdx)) - 0.5) * 0.075 * intensity * activeBand;
+    vec2 sliced = panel + vec2(sliceShift, 0.0);
+
+    float rgbKick = intensity * (0.004 + hash21(vec2(stepIdx, seed + 9.0)) * 0.014);
+    vec2 rgbDir = vec2(1.0, 0.0);
+
+    vec3 col = fetchPoster(sliced, idx);
+    col.r = fetchPoster(sliced + rgbDir * rgbKick, idx).r;
+    col.b = fetchPoster(sliced - rgbDir * rgbKick, idx).b;
+
+    float thinDrop = activeBand * step(0.72, fract(panel.y * 42.0 + bandRnd)) * intensity;
+    col *= 1.0 - thinDrop * 0.36;
+    col += vec3(0.16, 0.02, 0.22) * thinDrop;
+    return col;
+  }
+
+  vec3 digitalNoiseFlickerPoster06(vec2 panel, vec3 base, float intensity, float seed) {
+    float frame = floor(uTime * 18.0 + seed);
+    vec2 grid = floor(panel * vec2(360.0, 240.0));
+    float n = hash21(grid + vec2(frame, seed * 0.37));
+    float fineDot = step(0.988, n);
+    float gate = step(0.34, hash21(floor(panel * vec2(28.0, 18.0)) + vec2(frame * 0.31, seed)));
+    float speck = fineDot * gate * intensity;
+    vec3 noiseCol = vec3(0.72, 0.9, 1.0) * (0.18 + hash21(grid + frame) * 0.22);
+    return base + noiseCol * speck;
   }
 
   /** 3D 视差基向量：掠射角越大偏移越强 */
@@ -647,12 +768,19 @@ export const exploreNeonSignFrag = /* glsl */ `
 
   void main() {
     vec2 uv = vUv;
+    float depth = length(vWorldPos - uCamPos);
+    float distFade = signDistanceFade(depth);
+    if (distFade <= 0.002) discard;
+    float lod1Mix = smoothstep(uLod1Start, uLod1End, depth);
+    float lod2Mix = smoothstep(uLod2Start, uLod2End, depth);
     vec2 panelOff = uReflect > 0.5 ? geoReflectionSeamDistortion(vWorldPos.xz) : vec2(0.0);
     vec2 panel = uv + panelOff;
     float edgeFade = smoothstep(0.0, 0.02, uv.x) * smoothstep(1.0, 0.98, uv.x)
                    * smoothstep(0.0, 0.02, uv.y) * smoothstep(1.0, 0.98, uv.y);
 
-    float enabled = vGlitchEnabled;
+    float isHero = 1.0 - step(0.5, vSignTier);
+    float isNormal = step(0.5, vSignTier) * (1.0 - step(1.5, vSignTier));
+    float enabled = vGlitchEnabled * isHero;
     float interval = max(vGlitchInterval, 0.001);
     float phase = vGlitchPhase;
     float cycle = mod(uTime + phase, interval);
@@ -660,11 +788,33 @@ export const exploreNeonSignFrag = /* glsl */ `
     float burstT = clamp(cycle / max(uGlitchDuration, 0.001), 0.0, 1.0);
     float glitchMode = vGlitchMode;
 
+    float poster06 = 1.0 - step(0.5, abs(vPosterIndex - 6.0));
+    float poster09 = 1.0 - step(0.5, abs(vPosterIndex - 9.0));
     vec3 poster;
-    if (inBurst > 0.5 && glitchMode > 0.5) {
+    if (poster06 < 0.5 && poster09 < 0.5 && inBurst > 0.5 && glitchMode > 0.5) {
       poster = faultArt3DPoster(panel, vPosterIndex, burstT, vSeed, glitchMode);
     } else {
       poster = fetchPoster(panel, vPosterIndex);
+    }
+
+    float noiseInterval = 5.0 + hash21(vec2(vSeed + vPosterIndex, 606.0)) * 5.0;
+    float noiseCycle = mod(uTime + hash21(vec2(vSeed, 1660.0)) * noiseInterval, noiseInterval);
+    float noiseWindow = 0.12;
+    float noiseActive = poster06 * isHero * step(noiseCycle, noiseWindow);
+    float noiseStep = floor(clamp(noiseCycle / noiseWindow, 0.0, 1.0) * 2.0);
+    float noiseIntensity = noiseActive * (1.0 - step(1.5, noiseStep)) * 0.28;
+    if (noiseIntensity > 0.001) {
+      poster = digitalNoiseFlickerPoster06(panel, poster, noiseIntensity, vSeed);
+    }
+
+    float microInterval = 5.0 + hash21(vec2(vSeed + vPosterIndex, 90.0)) * 5.0;
+    float microCycle = mod(uTime + hash21(vec2(vSeed, 909.0)) * microInterval, microInterval);
+    float microWindow = 0.12;
+    float microActive = poster09 * isHero * step(microCycle, microWindow);
+    float microT = clamp(microCycle / microWindow, 0.0, 1.0);
+    float microIntensity = sin(microT * 3.14159265) * microActive;
+    if (microIntensity > 0.001) {
+      poster = microGlitchPoster09(panel, vPosterIndex, microIntensity, vSeed);
     }
 
     if (uReflect > 0.5) {
@@ -684,20 +834,32 @@ export const exploreNeonSignFrag = /* glsl */ `
       }
     }
 
-    float scan = sin((uv.y + uTime * 0.45) * 180.0) * 0.022 + 0.978;
+    float cheapPulse = 0.94 + 0.06 * sin(uTime * (1.2 + vFlickerSpeed * 5.0) + vSeed * 7.13);
+    float scan = sin((uv.y + uTime * (0.05 + vFlickerSpeed * 0.28)) * 180.0) * (0.006 + vFlickerSpeed * 0.014) + 0.978;
     poster *= scan;
 
     float luma = dot(poster, vec3(0.299, 0.587, 0.114));
     float emissiveMask = smoothstep(0.16, 0.68, luma);
+    vec3 lodPoster = mix(poster, poster * 0.58, lod1Mix);
+    lodPoster = mix(lodPoster, vColor * emissiveMask * 0.72, lod2Mix);
+    poster = lodPoster;
+    emissiveMask *= 1.0 - lod2Mix * 0.45;
 
     vec3 board = vec3(0.003, 0.002, 0.006);
     vec3 col = board * edgeFade;
-    float posterGain = inBurst > 0.5 ? 2.55 : 1.82;
+    float posterGain = inBurst > 0.5 && poster06 < 0.5 && poster09 < 0.5 ? 2.55 : 1.82;
+    posterGain *= vEmissiveIntensity * mix(cheapPulse, 1.0, isHero);
+    posterGain += microIntensity * 0.22;
     col += poster * edgeFade * posterGain;
-    col += poster * edgeFade * emissiveMask * uSignBloomBoost;
-    col += vColor * emissiveMask * edgeFade * 0.38;
+    col += poster * edgeFade * emissiveMask * uSignBloomBoost * (0.18 + isHero * 4.0);
+    col += vColor * emissiveMask * edgeFade * (0.3 + isNormal * 0.18);
 
-    if (inBurst > 0.5) {
+    if (noiseActive > 0.5) {
+      col += poster * edgeFade * noiseIntensity * 0.22;
+      col += vec3(0.5, 0.75, 1.0) * edgeFade * noiseIntensity * 0.1;
+    }
+
+    if (inBurst > 0.5 && poster06 < 0.5 && poster09 < 0.5) {
       col += vColor * edgeFade * (0.48 + sin(burstT * 80.0) * 0.2);
       col += poster * edgeFade * emissiveMask * 0.38;
     }
@@ -732,6 +894,49 @@ export const exploreNeonSignFrag = /* glsl */ `
       col = mix(col, vec3(0.015, 0.01, 0.028), blurMix);
     }
 
-    gl_FragColor = vec4(col, a);
+    col *= distFade;
+    col = mix(col, uFarFogColor, signFarFogAmount(depth));
+    gl_FragColor = vec4(col, a * distFade);
+  }
+`;
+
+export const exploreHeroNeonVert = /* glsl */ `
+  varying vec2 vUv;
+  varying vec3 vWorldPos;
+  void main() {
+    vUv = uv;
+    vec4 wp = modelMatrix * vec4(position, 1.0);
+    vWorldPos = wp.xyz;
+    gl_Position = projectionMatrix * viewMatrix * wp;
+  }
+`;
+
+export const exploreHeroNeonFrag = /* glsl */ `
+  precision highp float;
+  uniform sampler2D uHeroTexture;
+  uniform vec3 uFrameColor;
+  uniform float uTime;
+  uniform float uSeed;
+  uniform float uPosterGain;
+  uniform float uPosterGainBurst;
+  uniform float uSignBloomBoost;
+  varying vec2 vUv;
+
+  float hash21(vec2 p) {
+    return fract(sin(dot(p, vec2(41.31, 289.17))) * 43758.5453);
+  }
+
+  void main() {
+    vec2 uv = vUv;
+    vec4 tex = texture2D(uHeroTexture, uv);
+    float luma = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
+    float mask = smoothstep(0.08, 0.62, luma);
+    float flicker = 0.92 + 0.08 * sin(uTime * (2.2 + hash21(vec2(uSeed, 7.0)) * 2.0) + uSeed);
+    vec2 edge = smoothstep(vec2(0.0), vec2(0.018), uv) * (1.0 - smoothstep(vec2(0.982), vec2(1.0), uv));
+    float edgeFade = edge.x * edge.y;
+    vec3 col = tex.rgb * (uPosterGain * flicker + uPosterGainBurst * 0.18);
+    col += tex.rgb * mask * uSignBloomBoost;
+    col += uFrameColor * mask * 0.2;
+    gl_FragColor = vec4(col * edgeFade, tex.a * edgeFade);
   }
 `;

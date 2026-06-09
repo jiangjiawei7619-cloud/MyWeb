@@ -9,6 +9,7 @@ import type {
 } from '@/lib/explore-city-layout';
 import { EXPLORE_GROUND_REFLECTION } from '@/lib/explore-ground-reflection';
 import { EXPLORE_WORLD_SCALE, GROUND_HALF_EXTENT } from '@/physics/rapier-config';
+import { EXPLORE_DISTANCE_LOD } from '@/lib/explore-distance-lod';
 
 type AccentProps = {
   buildings: ExploreBuilding[];
@@ -39,33 +40,54 @@ type PoolInstance = {
 
 function makePoolMaterial() {
   return new THREE.ShaderMaterial({
+    uniforms: {
+      uCamPos: { value: new THREE.Vector3() },
+      uDistanceFadeStart: { value: EXPLORE_DISTANCE_LOD.fadeStart },
+      uDistanceFadeEnd: { value: EXPLORE_DISTANCE_LOD.fadeEnd },
+      uFarFogColor: { value: new THREE.Color(EXPLORE_DISTANCE_LOD.fogColor) },
+      uFarFogDensity: { value: EXPLORE_DISTANCE_LOD.fogDensity },
+    },
     vertexShader: /* glsl */ `
       attribute vec3 aColor;
       attribute float aStrength;
       varying vec2 vUv;
       varying vec3 vColor;
       varying float vStrength;
+      varying vec3 vWorldPos;
 
       void main() {
         vUv = uv;
         vColor = aColor;
         vStrength = aStrength;
-        gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+        vec4 wp = instanceMatrix * vec4(position, 1.0);
+        vWorldPos = (modelMatrix * wp).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * wp;
       }
     `,
     fragmentShader: /* glsl */ `
       precision highp float;
+      uniform vec3 uCamPos;
+      uniform float uDistanceFadeStart;
+      uniform float uDistanceFadeEnd;
+      uniform vec3 uFarFogColor;
+      uniform float uFarFogDensity;
       varying vec2 vUv;
       varying vec3 vColor;
       varying float vStrength;
+      varying vec3 vWorldPos;
 
       void main() {
+        float d = length(vWorldPos - uCamPos);
+        float fade = 1.0 - smoothstep(uDistanceFadeStart, uDistanceFadeEnd, d);
+        if (fade <= 0.002) discard;
         vec2 p = vUv * 2.0 - 1.0;
         float r = length(p);
         float core = 1.0 - smoothstep(0.0, 0.2, r);
         float aura = 1.0 - smoothstep(0.12, 0.58, r);
-        float alpha = (core * 0.18 + aura * 0.62) * vStrength;
-        gl_FragColor = vec4(vColor, alpha);
+        float alpha = (core * 0.18 + aura * 0.62) * vStrength * fade;
+        vec3 col = vColor * fade;
+        float fog = clamp(1.0 - exp(-d * uFarFogDensity), 0.0, 1.0);
+        gl_FragColor = vec4(mix(col, uFarFogColor, fog), alpha);
       }
     `,
     transparent: true,
@@ -94,6 +116,7 @@ function usePlaneInstances<T extends { x: number; z: number; sx: number; sz: num
 
 function NeonFloorPools({ signs }: { signs: ExploreNeonSign[] }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const { camera } = useThree();
   const items = useMemo<PoolInstance[]>(() => {
     return signs
       .filter((s) => s.y < 34 && !isPurpleFloorTint(s.color))
@@ -125,6 +148,10 @@ function NeonFloorPools({ signs }: { signs: ExploreNeonSign[] }) {
     return g;
   }, [items]);
   const material = useMemo(() => makePoolMaterial(), []);
+
+  useFrame(() => {
+    (material.uniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
+  });
 
   useEffect(() => {
     const mesh = meshRef.current;

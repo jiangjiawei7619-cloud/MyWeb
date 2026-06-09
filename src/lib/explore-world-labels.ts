@@ -47,13 +47,6 @@ export function posterLabelSize(width: number, height: number): number {
   return Math.max(width, height);
 }
 
-export function axisLengthForSize(size: number, kind: WorldLabelKind): number {
-  const factor = kind === 'building' ? 0.42 : 0.52;
-  const min = kind === 'building' ? 1.4 : 0.75;
-  const max = kind === 'building' ? 6.5 : 4.2;
-  return THREE.MathUtils.clamp(size * factor, min, max);
-}
-
 export function fontSizeForSize(size: number): number {
   return THREE.MathUtils.clamp(size * 0.095, 0.3, 0.92);
 }
@@ -61,6 +54,8 @@ export function fontSizeForSize(size: number): number {
 export function faceLabelFontSize(size: number): number {
   return THREE.MathUtils.clamp(fontSizeForSize(size) * 0.52, 0.16, 0.48);
 }
+
+const BUILDING_FACE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
 
 const STANDARD_ASPECTS: { ratio: number; label: string }[] = [
   { ratio: 16 / 9, label: '16:9' },
@@ -201,15 +196,16 @@ export function buildBuildingFaceLabels(buildings: ExploreBuilding[]): WorldFace
     const size = buildingLabelSize(b);
     const fontSize = faceLabelFontSize(size);
 
-    for (const spec of buildingFaceSpecs(b)) {
+    for (const [faceIndex, spec] of buildingFaceSpecs(b).entries()) {
       const offset = Math.max(spec.width, spec.height) * FACE_LABEL_OFFSET_FACTOR;
+      const faceLetter = BUILDING_FACE_LETTERS[faceIndex] ?? String.fromCharCode(65 + faceIndex);
       labels.push({
-        id: `${parentId}_${spec.face}`,
+        id: `${parentId}_${faceLetter}`,
         parentId,
         face: spec.face,
         position: offsetFaceCenter(spec.center, spec.rotation, offset),
         rotation: spec.rotation.clone(),
-        text: formatFaceProportion(spec.width, spec.height),
+        text: faceLetter,
         fontSize,
       });
     }
@@ -305,30 +301,4 @@ export function buildRebeccaHologramFaceLabels(): WorldFaceLabel[] {
       fontSize,
     },
   ];
-}
-
-export function appendAxisSegment(
-  positions: number[],
-  colors: number[],
-  from: THREE.Vector3,
-  to: THREE.Vector3,
-  color: THREE.Color,
-) {
-  positions.push(from.x, from.y, from.z, to.x, to.y, to.z);
-  colors.push(color.r, color.g, color.b, color.r, color.g, color.b);
-}
-
-export function appendLocalAxes(
-  positions: number[],
-  colors: number[],
-  matrix: THREE.Matrix4,
-  length: number,
-) {
-  const origin = new THREE.Vector3(0, 0, 0).applyMatrix4(matrix);
-  const xEnd = new THREE.Vector3(length, 0, 0).applyMatrix4(matrix);
-  const yEnd = new THREE.Vector3(0, length, 0).applyMatrix4(matrix);
-  const zEnd = new THREE.Vector3(0, 0, length).applyMatrix4(matrix);
-  appendAxisSegment(positions, colors, origin, xEnd, new THREE.Color('#ff3333'));
-  appendAxisSegment(positions, colors, origin, yEnd, new THREE.Color('#33dd55'));
-  appendAxisSegment(positions, colors, origin, zEnd, new THREE.Color('#3388ff'));
 }

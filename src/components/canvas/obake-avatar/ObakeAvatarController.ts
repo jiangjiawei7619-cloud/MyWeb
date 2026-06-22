@@ -14,6 +14,14 @@ export type AvatarVisualState = 'move' | 'jump' | 'doubleJump' | 'fall' | 'land'
 
 type TimedAction =
   | { kind: 'jumpSquash'; start: number; phase: 'squash' | 'stretch' }
+  | {
+      kind: 'takeoff';
+      start: number;
+      duration: number;
+      leanCarry: number;
+      rollCarry: number;
+      armCarry: number;
+    }
   | { kind: 'doubleJump'; start: number; duration: number }
   | { kind: 'land'; start: number; duration: number };
 
@@ -46,6 +54,8 @@ const DOUBLE_JUMP_FLIP_SPEED_TOTAL =
   DOUBLE_JUMP_FLIP_SEGMENT_SPEEDS[0] +
   DOUBLE_JUMP_FLIP_SEGMENT_SPEEDS[1] +
   DOUBLE_JUMP_FLIP_SEGMENT_SPEEDS[2];
+const SKIP_LAND_ANIMATION_SPEED = MOVE_SPEED * 0.08;
+const AIRBORNE_RUN_PHASE_SCALE = 0.448;
 
 function directionToYaw(dir: THREE.Vector3): number {
   return Math.atan2(-dir.x, -dir.z);
@@ -82,6 +92,27 @@ function segmentedFlipProgress01(t: number) {
   return weightedProgress / DOUBLE_JUMP_FLIP_SPEED_TOTAL;
 }
 
+function landingAbsorb01(t: number) {
+  const p = THREE.MathUtils.clamp(t, 0, 1);
+  const attack = smoothstep01(p / 0.16);
+  const release = 1 - smoothstep01((p - 0.2) / 0.42);
+  return THREE.MathUtils.clamp(attack * release, 0, 1);
+}
+
+function landingRebound01(t: number) {
+  const p = THREE.MathUtils.clamp((t - 0.32) / 0.38, 0, 1);
+  return Math.sin(p * Math.PI) * (1 - smoothstep01((p - 0.58) / 0.32));
+}
+
+function landingSettle01(t: number) {
+  return smoothstep01((t - 0.68) / 0.28);
+}
+
+function takeoffEase01(t: number) {
+  const p = THREE.MathUtils.clamp(t, 0, 1);
+  return p * p * (3 - 2 * p);
+}
+
 function resolveAvatarState(
   grounded: boolean,
   _hasMoveInput: boolean,
@@ -91,6 +122,7 @@ function resolveAvatarState(
 ): AvatarVisualState {
   if (activeAction?.kind === 'land') return 'land';
   if (activeAction?.kind === 'doubleJump') return 'doubleJump';
+  if (activeAction?.kind === 'takeoff') return 'jump';
   if (activeAction?.kind === 'jumpSquash') return 'jump';
 
   if (!grounded) {
@@ -133,6 +165,7 @@ export class ObakeAvatarController {
   private smoothRunScaleY = 1;
   private smoothRunScaleZ = 1;
   private runPhase = 0;
+  private airbornePosePhase = 0;
   private smoothTurnLean = 0;
   private rootLeanForBones = 0;
   private rootRollForBones = 0;
@@ -190,6 +223,7 @@ export class ObakeAvatarController {
     this.smoothRunScaleY = 1;
     this.smoothRunScaleZ = 1;
     this.runPhase = 0;
+    this.airbornePosePhase = 0;
     this.smoothTurnLean = 0;
     this.rootLeanForBones = 0;
     this.rootRollForBones = 0;
@@ -252,9 +286,22 @@ export class ObakeAvatarController {
     controller.getDisplayBodyPosition(_scratchPos, physicsAlpha);
 
     if (pulses.land) {
-      this.action = { kind: 'land', start: this.time, duration: OBAKE_MOTION.landDuration };
+      const movingOnLanding = hasMoveInput || horizontalSpeed > SKIP_LAND_ANIMATION_SPEED;
+      if (movingOnLanding) {
+        this.action = null;
+        this.smoothAirborneMotionStrength = 0;
+      } else {
+        this.action = { kind: 'land', start: this.time, duration: OBAKE_MOTION.landDuration };
+      }
     } else if (pulses.jump && cfg.enableJumpSquash) {
-      this.action = null;
+      this.action = {
+        kind: 'takeoff',
+        start: this.time,
+        duration: OBAKE_MOTION.takeoffDuration,
+        leanCarry: this.smoothLeanX,
+        rollCarry: this.smoothRollZ,
+        armCarry: this.smoothArmSwingStrength,
+      };
     } else if (pulses.doubleJump && cfg.enableDoubleJumpAction) {
       this.action = { kind: 'doubleJump', start: this.time, duration: DOUBLE_JUMP_FLIP_DURATION };
     }
@@ -272,6 +319,11 @@ export class ObakeAvatarController {
       verticalVelocity,
       this.action,
     );
+    if (avatarState === 'jump' || avatarState === 'fall' || avatarState === 'doubleJump') {
+      this.airbornePosePhase += Math.PI * 2 * ghostRunConfig.airborneTwistHz * animDt;
+    } else {
+      this.airbornePosePhase = this.runPhase * AIRBORNE_RUN_PHASE_SCALE;
+    }
 
     this.root.position.set(
       _scratchPos.x + cfg.positionOffset[0],
@@ -296,6 +348,7 @@ export class ObakeAvatarController {
       moveStrength: this.smoothArmSwingStrength,
       airborne: !grounded,
       runPhase: this.runPhase,
+      airbornePhase: this.airbornePosePhase,
       speedRatio: this.smoothSpeedRatio,
       rootLean: this.rootLeanForBones,
       rootRoll: this.rootRollForBones,
@@ -324,6 +377,7 @@ export class ObakeAvatarController {
         doubleJumpStrength: 1,
         flipPhase,
         airborneStrength: Math.max(this.smoothAirborneMotionStrength, 0.35),
+        landStrength: 0,
       };
     }
 
@@ -333,6 +387,38 @@ export class ObakeAvatarController {
         doubleJumpStrength: 0,
         flipPhase: 0,
         airborneStrength: Math.max(this.smoothAirborneMotionStrength, 0.75),
+        landStrength: 0,
+      };
+    }
+
+    if (this.action?.kind === 'takeoff') {
+      const p = takeoffEase01(
+        (this.time - this.action.start) / this.action.duration,
+      );
+      return {
+        jumpStrength: THREE.MathUtils.lerp(0.12, 0.45, p),
+        doubleJumpStrength: 0,
+        flipPhase: 0,
+        airborneStrength: Math.max(
+          this.smoothAirborneMotionStrength * p,
+          OBAKE_MOTION.takeoffAirborneStart * p,
+        ),
+        landStrength: 0,
+      };
+    }
+
+    if (this.action?.kind === 'land') {
+      const p = THREE.MathUtils.clamp(
+        (this.time - this.action.start) / this.action.duration,
+        0,
+        1,
+      );
+      return {
+        jumpStrength: 0,
+        doubleJumpStrength: 0,
+        flipPhase: 0,
+        airborneStrength: 0,
+        landStrength: landingAbsorb01(p),
       };
     }
 
@@ -342,6 +428,7 @@ export class ObakeAvatarController {
         doubleJumpStrength: 0,
         flipPhase: 0,
         airborneStrength: this.smoothAirborneMotionStrength,
+        landStrength: 0,
       };
     }
 
@@ -351,6 +438,7 @@ export class ObakeAvatarController {
         doubleJumpStrength: 0,
         flipPhase: 0,
         airborneStrength: this.smoothAirborneMotionStrength,
+        landStrength: 0,
       };
     }
 
@@ -359,6 +447,7 @@ export class ObakeAvatarController {
       doubleJumpStrength: 0,
       flipPhase: 0,
       airborneStrength: this.smoothAirborneMotionStrength,
+      landStrength: 0,
     };
   }
 
@@ -374,6 +463,9 @@ export class ObakeAvatarController {
         } else if (action.phase === 'stretch' && elapsed > 0.1) {
           this.action = null;
         }
+        break;
+      case 'takeoff':
+        if (elapsed >= action.duration) this.action = null;
         break;
       case 'doubleJump':
         if (elapsed >= action.duration + delta) this.action = null;
@@ -535,10 +627,21 @@ export class ObakeAvatarController {
     this.debug.smoothSpeedRatio = this.smoothSpeedRatio;
     this.debug.phaseSpeed = phaseSpeed;
 
+    const takeoffAction = this.action?.kind === 'takeoff' ? this.action : null;
+    const takeoffProgress = takeoffAction
+      ? takeoffEase01((this.time - takeoffAction.start) / takeoffAction.duration)
+      : 1;
+    const takeoffAirborneGate = takeoffAction
+      ? THREE.MathUtils.lerp(OBAKE_MOTION.takeoffAirborneStart, 1, takeoffProgress)
+      : 1;
     const targetAirborneMotionStrength =
-      !grounded && state !== 'land' ? (state === 'doubleJump' ? 0.25 : 1) : 0;
+      (!grounded && state !== 'land' ? (state === 'doubleJump' ? 0.25 : 1) : 0) * takeoffAirborneGate;
     const airborneMotionSmooth =
-      targetAirborneMotionStrength > this.smoothAirborneMotionStrength ? 10 : 3.2;
+      targetAirborneMotionStrength > this.smoothAirborneMotionStrength
+        ? takeoffAction
+          ? 18
+          : 10
+        : 3.2;
     const airborneMotionT = dampAlpha(airborneMotionSmooth, delta);
     this.smoothAirborneMotionStrength = THREE.MathUtils.lerp(
       this.smoothAirborneMotionStrength,
@@ -546,7 +649,7 @@ export class ObakeAvatarController {
       airborneMotionT,
     );
     const airborneMotionStrength = this.smoothAirborneMotionStrength;
-    const airbornePhase = this.time * Math.PI * 2 * ghostRunConfig.airborneTwistHz;
+    const airbornePhase = this.airbornePosePhase;
 
     let targetLeanX = 0;
     let targetSwayY = 0;
@@ -556,6 +659,7 @@ export class ObakeAvatarController {
     let scaleY = 1;
     let scaleZ = 1;
     let flipRotationX = 0;
+    let landSettle = 0;
 
     switch (state) {
       case 'move':
@@ -581,8 +685,11 @@ export class ObakeAvatarController {
 
       case 'jump':
         targetLeanX =
-          OBAKE_MOTION.jumpLean +
-          Math.sin(airbornePhase) * OBAKE_MOTION.airborneBodyLeanAmp * 0.55 * airborneMotionStrength;
+          OBAKE_MOTION.airborneLean +
+          Math.sin(airbornePhase) * OBAKE_MOTION.airborneBodyLeanAmp * airborneMotionStrength;
+        if (takeoffAction) {
+          targetLeanX = THREE.MathUtils.lerp(takeoffAction.leanCarry, targetLeanX, takeoffProgress);
+        }
         targetSwayY =
           Math.sin(airbornePhase + Math.PI * 0.55) *
           OBAKE_MOTION.airborneBodyYawAmp *
@@ -593,6 +700,9 @@ export class ObakeAvatarController {
           OBAKE_MOTION.airborneBodyRollAmp *
           0.62 *
           airborneMotionStrength;
+        if (takeoffAction) {
+          targetRollZ = THREE.MathUtils.lerp(takeoffAction.rollCarry, targetRollZ, takeoffProgress);
+        }
         break;
 
       case 'doubleJump':
@@ -609,8 +719,8 @@ export class ObakeAvatarController {
           flipRotationX = LEAN_SIGN * DOUBLE_JUMP_FLIP_ROTATION * flipProgress;
         }
         targetLeanX =
-          OBAKE_MOTION.jumpLean * 0.92 +
-          Math.sin(airbornePhase) * OBAKE_MOTION.airborneBodyLeanAmp * 0.55 * airborneMotionStrength;
+          OBAKE_MOTION.airborneLean +
+          Math.sin(airbornePhase) * OBAKE_MOTION.airborneBodyLeanAmp * airborneMotionStrength;
         targetSwayY =
           Math.sin(airbornePhase + Math.PI * 0.55) *
           OBAKE_MOTION.airborneBodyYawAmp *
@@ -625,8 +735,8 @@ export class ObakeAvatarController {
 
       case 'fall':
         targetLeanX =
-          OBAKE_MOTION.fallLean +
-          Math.sin(airbornePhase) * OBAKE_MOTION.airborneBodyLeanAmp * 0.55 * airborneMotionStrength;
+          OBAKE_MOTION.airborneLean +
+          Math.sin(airbornePhase) * OBAKE_MOTION.airborneBodyLeanAmp * airborneMotionStrength;
         targetSwayY =
           Math.sin(airbornePhase + Math.PI * 0.55) *
           OBAKE_MOTION.airborneBodyYawAmp *
@@ -640,7 +750,25 @@ export class ObakeAvatarController {
         break;
 
       case 'land':
-        targetLeanX = 0;
+        if (this.action?.kind === 'land') {
+          const p = THREE.MathUtils.clamp(
+            (this.time - this.action.start) / this.action.duration,
+            0,
+            1,
+          );
+          const absorb = landingAbsorb01(p);
+          const rebound = landingRebound01(p);
+          landSettle = landingSettle01(p);
+          const settleFade = 1 - landSettle;
+          const airborneCarry = OBAKE_MOTION.airborneLean * (1 - smoothstep01(p / 0.18));
+          targetLeanX = (airborneCarry + OBAKE_MOTION.landLean * absorb) * settleFade;
+          bobY = (-OBAKE_MOTION.landDipY * absorb + OBAKE_MOTION.landReboundY * rebound) * settleFade;
+          scaleX = 1 + (OBAKE_MOTION.landSpreadX * absorb - OBAKE_MOTION.landSpreadX * 0.22 * rebound) * settleFade;
+          scaleY = 1 + (-OBAKE_MOTION.landSquashY * absorb + OBAKE_MOTION.landReboundY * 0.75 * rebound) * settleFade;
+          scaleZ = 1 + (OBAKE_MOTION.landSpreadZ * absorb - OBAKE_MOTION.landSpreadZ * 0.18 * rebound) * settleFade;
+        } else {
+          targetLeanX = 0;
+        }
         targetSwayY = 0;
         targetRollZ = 0;
         break;
@@ -650,7 +778,9 @@ export class ObakeAvatarController {
     }
 
     const motionSmooth =
-      state === 'land' ? OBAKE_MOTION.tiltSmooth * 0.55 : OBAKE_MOTION.tiltSmooth;
+      state === 'land'
+        ? THREE.MathUtils.lerp(OBAKE_MOTION.tiltSmooth * 1.25, OBAKE_MOTION.tiltSmooth * 2.4, landSettle)
+        : OBAKE_MOTION.tiltSmooth;
     const motionT = dampAlpha(motionSmooth, delta);
     this.smoothLeanX = THREE.MathUtils.lerp(this.smoothLeanX, targetLeanX, motionT);
     this.smoothSwayY = 0;
@@ -661,10 +791,17 @@ export class ObakeAvatarController {
       rollLimit,
     );
 
-    const targetArmSwing =
+    let targetArmSwing =
       ghostRunToggles.enableArmSwing && grounded && moving
         ? moveStrength
         : airborneMotionStrength * 0.28;
+    if (takeoffAction) {
+      targetArmSwing = THREE.MathUtils.lerp(
+        takeoffAction.armCarry * OBAKE_MOTION.takeoffRunArmCarry,
+        targetArmSwing,
+        takeoffProgress,
+      );
+    }
     const armT = dampAlpha(OBAKE_MOTION.armSwingSmooth, delta);
     this.smoothArmSwingStrength = THREE.MathUtils.lerp(this.smoothArmSwingStrength, targetArmSwing, armT);
 
@@ -682,8 +819,8 @@ export class ObakeAvatarController {
     const stretchForward = 1 + cameraFx * OBAKE_MOTION.cameraStretchForward;
     const stretchSquash = 1 - cameraFx * OBAKE_MOTION.cameraStretchSquash;
     const stretchWidth = 1 + cameraFx * OBAKE_MOTION.cameraStretchWidth;
-    const stretchSurge = state === 'move' ? 0 : cameraFx * OBAKE_MOTION.cameraStretchSurge;
-    const rootEase = state === 'land' ? 9 : 16;
+    const stretchSurge = 0;
+    const rootEase = state === 'land' ? THREE.MathUtils.lerp(20, 34, landSettle) : 16;
     const rootT = dampAlpha(rootEase, delta);
     this.smoothBobY = THREE.MathUtils.lerp(this.smoothBobY, bobY, rootT);
     this.smoothRunScaleX = THREE.MathUtils.lerp(this.smoothRunScaleX, scaleX, rootT);

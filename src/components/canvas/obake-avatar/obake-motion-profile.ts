@@ -41,22 +41,44 @@ export const OBAKE_MOTION = {
   sideSwayAmp: 0.11,
   sideSwayHz: 2.6,
   tiltSmooth: 12,
-  jumpLean: 0.38,
-  fallLean: 0.32,
+  airborneLean: 0.288,
+  jumpLean: 0.288,
+  fallLean: 0.288,
   airbornePoseHz: 1.05 * 0.8 * 0.85,
-  airborneBodyLeanAmp: 0.05,
-  airborneBodyYawAmp: 0.09,
-  airborneBodyRollAmp: 0.065,
-  airborneArmSwingAmp: 0.32,
-  airborneArmLiftX: -0.34,
-  airborneArmOpenZ: 0.14,
-  airborneLowerArmCurlX: -0.16,
-  airborneChestTwistY: 0.08,
-  airborneChestRollZ: 0.055,
-  airborneHipCounterZ: -0.035,
-  airborneLegDriftX: -0.08,
-  airborneKneeDriftX: 0.12,
-  landDuration: 0.12,
+  airborneBodyLeanAmp: 0.018,
+  airborneBodyYawAmp: 0.16,
+  airborneBodyRollAmp: 0.13,
+  airborneArmSwingAmp: 0.38,
+  airborneArmLiftX: -0.5,
+  airborneArmOpenZ: 0.24,
+  airborneLowerArmCurlX: -0.28,
+  airborneChestTwistY: 0.24,
+  airborneChestRollZ: 0.14,
+  airborneHipPitchX: -0.065,
+  airborneHipCounterY: 0.09,
+  airborneHipCounterZ: -0.12,
+  airborneShoulderPumpX: 0.16,
+  airborneShoulderSwayY: 0.12,
+  airborneHandCurlX: -0.12,
+  airborneHandRollZ: 0.11,
+  airborneLegDriftX: -0.16,
+  airborneLegOpenZ: 0.13,
+  airborneKneeDriftX: 0.22,
+  airborneFootCurlX: -0.16,
+  airborneFootRollZ: 0.08,
+  takeoffDuration: 0.18,
+  takeoffAirborneStart: 0.42,
+  takeoffRunArmCarry: 0.82,
+  landDuration: 0.32,
+  landLean: 0.2,
+  landDipY: 0.065,
+  landSquashY: 0.1,
+  landSpreadX: 0.045,
+  landSpreadZ: 0.035,
+  landReboundY: 0.024,
+  landChestCurlX: 0.12,
+  landArmSettleX: -0.14,
+  landLowerArmCurlX: -0.12,
   jumpArmLiftX: -0.56,
   jumpArmOpenZ: 0.28,
   jumpLowerArmCurlX: -0.28,
@@ -69,7 +91,7 @@ export const OBAKE_MOTION = {
   doubleJumpFootCurlX: -0.22,
   doubleJumpChestCurlX: 0.26,
   doubleJumpHipCounterX: -0.14,
-  cameraStretchSurge: 0.08112,
+  cameraStretchSurge: 0,
   cameraStretchForward: 0,
   cameraStretchSquash: 0,
   cameraStretchWidth: 0,
@@ -80,6 +102,7 @@ export type ObakeArmMotionInput = {
   moveStrength: number;
   airborne: boolean;
   runPhase?: number;
+  airbornePhase?: number;
   speedRatio?: number;
   rootLean?: number;
   rootRoll?: number;
@@ -88,6 +111,7 @@ export type ObakeArmMotionInput = {
   doubleJumpStrength?: number;
   flipPhase?: number;
   airborneStrength?: number;
+  landStrength?: number;
 };
 
 export const ghostRunToggles = {
@@ -155,7 +179,7 @@ export const ghostRunConfig = {
   sprintArmChestGatherCurl: 0.3,
   sprintElbowSwingBend: 0.16,
   sprintLegAmp: 0.055,
-  airborneTwistHz: 0.62,
+  airborneTwistHz: 0.496,
   clothDamping: 7.5,
   clothTurnDrag: 0.75,
 } as const;

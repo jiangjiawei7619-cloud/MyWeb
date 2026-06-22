@@ -331,9 +331,9 @@ export function applyObakeHumanoidPose(
     0.095,
   );
   const chestRoll = THREE.MathUtils.clamp(
-    airCounterWave * 0.008,
-    -0.015,
-    0.015,
+    armWave * ghostRunConfig.chestRollAmp * sprintStrength + airCounterWave * 0.008,
+    -0.046,
+    0.046,
   );
   const chestPitch =
     rootLean * ghostRunConfig.chestPitchFollow +
@@ -368,6 +368,10 @@ export function applyObakeHumanoidPose(
   const rightBack = Math.max(0, -rightArmWave) * armStrength;
   const leftGather = smoothstep01((leftArmWave - 0.38) / 0.62) * armStrength;
   const rightGather = smoothstep01((rightArmWave - 0.38) / 0.62) * armStrength;
+  const shoulderDrive = armRun * (0.35 + speedRatio * 0.65);
+  const shoulderRhythm = Math.abs(armWave) * shoulderDrive;
+  const leftScapulaRoll = (leftForward - leftBack * 0.35) * shoulderDrive;
+  const rightScapulaRoll = (rightForward - rightBack * 0.35) * shoulderDrive;
   const leftUpperArmX =
     a.upperArmX -
     leftForward * ghostRunConfig.sprintArmForwardAmp +
@@ -391,15 +395,15 @@ export function applyObakeHumanoidPose(
   const leftShoulderReachZ =
     leftForward * ghostRunConfig.sprintShoulderReachForward -
     leftBack * ghostRunConfig.sprintShoulderReachBackward +
-    leftGather * ghostRunConfig.sprintShoulderReachForward * 0.35;
+    leftGather * ghostRunConfig.sprintShoulderReachForward * 0.2;
   const rightShoulderReachZ =
     rightForward * ghostRunConfig.sprintShoulderReachForward -
     rightBack * ghostRunConfig.sprintShoulderReachBackward +
-    rightGather * ghostRunConfig.sprintShoulderReachForward * 0.35;
+    rightGather * ghostRunConfig.sprintShoulderReachForward * 0.2;
   const leftShoulderLiftY =
-    (leftForward + leftGather * 0.45) * ghostRunConfig.sprintShoulderReachLift;
+    (leftForward + leftGather * 0.35 + shoulderRhythm * 0.12) * ghostRunConfig.sprintShoulderReachLift;
   const rightShoulderLiftY =
-    (rightForward + rightGather * 0.45) * ghostRunConfig.sprintShoulderReachLift;
+    (rightForward + rightGather * 0.35 + shoulderRhythm * 0.12) * ghostRunConfig.sprintShoulderReachLift;
   const jumpArmLiftX = OBAKE_MOTION.jumpArmLiftX * jump;
   const jumpArmOpenZ = OBAKE_MOTION.jumpArmOpenZ * jump;
   const airArmLiftX = OBAKE_MOTION.airborneArmLiftX * 0.72 * airborne;
@@ -420,18 +424,20 @@ export function applyObakeHumanoidPose(
     forearmCurveY +
     rightForward * ghostRunConfig.armInwardAmp * 0.75 +
     rightGather * ghostRunConfig.sprintArmChestGatherY * 0.55;
+  const idlePalmInward = 0.16;
 
   applyBoneEuler(
     cache,
     VRMHumanBoneName.LeftShoulder,
-    leftShoulderPump + leftShoulderLead + jump * 0.08 + Math.max(0, -airWave) * 0.08,
+    -(leftShoulderPump + leftShoulderLead) + jump * 0.08 + Math.max(0, -airWave) * 0.08,
     -(
       leftForward * ghostRunConfig.armInwardAmp +
       leftGather * ghostRunConfig.sprintArmChestGatherY +
-      leftShoulderLead * 0.28
+      leftShoulderLead * 0.22
     ),
     leftForward * 0.065 +
       leftShoulderLead * ghostRunConfig.sprintShoulderRollForwardAmp +
+      leftScapulaRoll * 0.08 +
       leftGather * ghostRunConfig.sprintArmChestGatherZ -
       leftBack * 0.025 -
       jumpArmOpenZ * 0.35 -
@@ -447,12 +453,13 @@ export function applyObakeHumanoidPose(
   applyBoneEuler(
     cache,
     VRMHumanBoneName.RightShoulder,
-    rightShoulderPump + rightShoulderLead + jump * 0.08 + Math.max(0, airWave) * 0.08,
+    -(rightShoulderPump + rightShoulderLead) + jump * 0.08 + Math.max(0, airWave) * 0.08,
     rightForward * ghostRunConfig.armInwardAmp +
       rightGather * ghostRunConfig.sprintArmChestGatherY +
-      rightShoulderLead * 0.28,
+      rightShoulderLead * 0.22,
     -rightForward * 0.065 -
       rightShoulderLead * ghostRunConfig.sprintShoulderRollForwardAmp -
+      rightScapulaRoll * 0.08 -
       rightGather * ghostRunConfig.sprintArmChestGatherZ +
       rightBack * 0.025 +
       jumpArmOpenZ * 0.35 +
@@ -468,8 +475,8 @@ export function applyObakeHumanoidPose(
   applyBoneEuler(
     cache,
     VRMHumanBoneName.LeftUpperArm,
-    leftUpperArmX -
-      leftShoulderLead * ghostRunConfig.sprintShoulderUpperArmFollow +
+    leftUpperArmX +
+      (leftShoulderPump + leftShoulderLead) * ghostRunConfig.sprintShoulderUpperArmFollow +
       jumpArmLiftX +
       tuckArmX +
       airArmLiftX,
@@ -485,8 +492,8 @@ export function applyObakeHumanoidPose(
   applyBoneEuler(
     cache,
     VRMHumanBoneName.RightUpperArm,
-    rightUpperArmX -
-      rightShoulderLead * ghostRunConfig.sprintShoulderUpperArmFollow +
+    rightUpperArmX +
+      (rightShoulderPump + rightShoulderLead) * ghostRunConfig.sprintShoulderUpperArmFollow +
       jumpArmLiftX +
       tuckArmX +
       airArmLiftX,
@@ -530,16 +537,16 @@ export function applyObakeHumanoidPose(
   applyBoneEuler(
     cache,
     VRMHumanBoneName.LeftHand,
-    -leftGather * 0.08,
-    -leftForearmInward * 0.55,
-    0,
+    -leftGather * 0.06,
+    idlePalmInward + leftForearmInward * 0.72,
+    leftGather * 0.045,
   );
   applyBoneEuler(
     cache,
     VRMHumanBoneName.RightHand,
-    -rightGather * 0.08,
-    rightForearmInward * 0.55,
-    0,
+    -rightGather * 0.06,
+    -idlePalmInward - rightForearmInward * 0.72,
+    -rightGather * 0.045,
   );
 
   const legTuckX = OBAKE_MOTION.doubleJumpLegTuckX * tuck;

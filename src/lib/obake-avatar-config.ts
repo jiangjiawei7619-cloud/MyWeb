@@ -42,8 +42,8 @@ const DEFAULT_CONFIG: ObakeAvatarDebugConfig = {
   enableDebugSkeleton: false,
   bodyColor: '#5a1020',
   useEmissiveGlow: true,
-  emissiveTint: '#ff8aa8',
-  emissiveIntensity: 0.55,
+  emissiveTint: '#ff8d8f',
+  emissiveIntensity: 0.7,
 };
 
 function readDevOverride(): Partial<ObakeAvatarDebugConfig> {

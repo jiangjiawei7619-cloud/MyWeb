@@ -7,7 +7,6 @@ export default function ExploreBuilding01SignalHologram() {
       texturePath={BUILDING01_SIGNAL_HOLOGRAM.texturePath}
       placement={BUILDING01_SIGNAL_HOLOGRAM.placement}
       burst={BUILDING01_SIGNAL_HOLOGRAM.burst}
-      reflect={BUILDING01_SIGNAL_HOLOGRAM.reflect}
       signalDropout={BUILDING01_SIGNAL_HOLOGRAM.signalDropout}
     />
   );

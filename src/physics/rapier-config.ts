@@ -13,7 +13,7 @@ export const PLAYER_FRICTION = 0.8;
 export const PLAYER_RESTITUTION = 0;
 
 export const MOVE_SPEED = 5;
-export const JUMP_HEIGHT = 1.5 * 0.8;
+export const JUMP_HEIGHT = 1.5 * 0.8 * 0.9;
 /** v = √(2gh)，与 Rapier 重力 -9.81 一致 */
 export const JUMP_VELOCITY = Math.sqrt(2 * 9.81 * JUMP_HEIGHT);
 
@@ -49,10 +49,17 @@ export const BOUNDARY_WALL_THICKNESS = 0.6;
 /** 相机相对刚体中心的垂直偏移（约 1.6m 眼高） */
 export const EYE_OFFSET_Y = 0.7;
 
+/** EXPLORE 第三人称：相机 pivot 相对刚体中心的高度（胸口/幽灵中心） */
+export const THIRD_PERSON_PIVOT_Y = 0.22;
+/** EXPLORE 第三人称：相机沿视线反向后退距离（越大角色在画面中越小） */
+export const THIRD_PERSON_DISTANCE = 3.15;
+/** EXPLORE 第三人称：俯视偏移（弧度），角色落在画面偏下 */
+export const THIRD_PERSON_PITCH_BIAS = -0.22;
+
 export const PITCH_MIN = (-85 * Math.PI) / 180;
 export const PITCH_MAX = (85 * Math.PI) / 180;
 
-export const MOUSE_SENSITIVITY = 0.002;
+export const MOUSE_SENSITIVITY = 0.003;
 
 /** 角速度衰减（越大停得越快） */
 export const LOOK_MOMENTUM_DECAY = 5.2;
@@ -69,10 +76,10 @@ export const LOOK_STATIONARY_DECAY_MULT = 4.2;
 
 /** 镜头运动 FX（走路仰视时中心收缩 + 边缘拉伸，Samsy 风格） */
 export const CAMERA_BASE_FOV = 75;
-/** 满速仰视时额外 FOV（越大中心相对越小、边缘拉伸越强） */
-export const CAMERA_WALK_FOV_BOOST = 18;
+/** 满速时额外 FOV（越大边缘拉伸越强；中心由 dolly 稳住） */
+export const CAMERA_WALK_FOV_BOOST = 18.928;
 /** dolly-zoom：FOV 变宽时沿视线前移，稳住画面中心 */
-export const CAMERA_DOLLY_PUSH_SCALE = 6.2;
+export const CAMERA_DOLLY_PUSH_SCALE = 8.3824;
 /** >1 时静止/慢走几乎无拉伸，满速拉伸更猛（对比度） */
 export const CAMERA_STRETCH_CONTRAST = 2.35;
 /** 行走/FOV 拉伸整体平滑速度 */

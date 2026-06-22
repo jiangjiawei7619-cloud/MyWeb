@@ -1,16 +1,15 @@
-export type BlogCategory = 'all' | 'tech' | 'leetcode' | 'github' | 'daily';
+export type BlogCategory = 'tech' | 'leetcode' | 'github' | 'daily';
 
 type BlogCategoryTabsProps = {
   selectedCategory: BlogCategory;
   onSelect: (category: BlogCategory) => void;
 };
 
-const BLOG_TABS: Array<{ id: BlogCategory; label: string; icon: string }> = [
-  { id: 'all', label: 'ALL', icon: 'dashboard' },
-  { id: 'tech', label: 'TECH NOTES', icon: 'deployed_code' },
-  { id: 'leetcode', label: 'LEETCODE', icon: 'code_blocks' },
-  { id: 'github', label: 'GITHUB', icon: 'hub' },
-  { id: 'daily', label: 'DAILY LOGS', icon: 'adjust' },
+const BLOG_TABS: Array<{ id: BlogCategory; label: string }> = [
+  { id: 'tech', label: 'Tech Notes' },
+  { id: 'leetcode', label: 'LeetCode' },
+  { id: 'github', label: 'GitHub' },
+  { id: 'daily', label: 'Daily' },
 ];
 
 export default function BlogCategoryTabs({ selectedCategory, onSelect }: BlogCategoryTabsProps) {
@@ -23,14 +22,12 @@ export default function BlogCategoryTabs({ selectedCategory, onSelect }: BlogCat
           <button
             key={tab.id}
             type="button"
+            aria-label={tab.label}
             aria-pressed={isActive}
             onClick={() => onSelect(tab.id)}
             className={`blog-category-tab ${isActive ? 'blog-category-tab--active' : ''}`}
           >
-            <span className="material-symbols-outlined text-[17px]" aria-hidden>
-              {tab.icon}
-            </span>
-            <span>{tab.label}</span>
+            <span className="blog-category-tab__label">{tab.label}</span>
           </button>
         );
       })}

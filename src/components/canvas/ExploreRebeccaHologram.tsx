@@ -3,7 +3,6 @@ import {
   getRebeccaHologramPlacement,
   REBECCA_GLITCH_BURST,
   REBECCA_LANDMARK,
-  REBECCA_REFLECT,
 } from '@/lib/rebecca-hologram-config';
 
 export default function ExploreRebeccaHologram() {
@@ -12,7 +11,6 @@ export default function ExploreRebeccaHologram() {
       texturePath={REBECCA_LANDMARK.texturePath}
       placement={getRebeccaHologramPlacement()}
       burst={REBECCA_GLITCH_BURST}
-      reflect={REBECCA_REFLECT}
     />
   );
 }

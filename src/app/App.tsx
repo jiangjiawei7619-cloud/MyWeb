@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { ActivePage } from '@/lib/types';
 import { playJumpSound, installAudioUnlockListeners, installAudioVisibilityListeners, enterAboutFocusMode, exitAboutFocusMode } from '@/utils/audio';
 import TopAppBar from '@/components/layout/TopAppBar';
@@ -7,34 +7,20 @@ import AboutSection from '@/components/sections/AboutSection';
 import LogsSection from '@/components/sections/LogsSection';
 import FooterShell from '@/components/layout/FooterShell';
 import FirstPersonScene from '@/components/canvas/FirstPersonScene';
-import LoadingScreen from '@/components/loading/LoadingScreen';
 import { preloadExploreWorldAssets } from '@/lib/explore-world-preload';
 
-function shouldSkipInitialLoading(): boolean {
-  if (typeof window === 'undefined') return false;
-  const params = new URLSearchParams(window.location.search);
-  return (
-    params.get('skipLoading') === '1' ||
-    params.get('debugDepthFade') === '1' ||
-    params.get('debugFresnel') === '1' ||
-    params.get('debugReflectionOnly') === '1' ||
-    params.get('debugMicroVariation') === '1'
-  );
-}
-
 export default function App() {
-  const skipInitialLoading = shouldSkipInitialLoading();
-  const [showLoading, setShowLoading] = useState(!skipInitialLoading);
-  const [appRevealed, setAppRevealed] = useState(skipInitialLoading);
-  const [introActive, setIntroActive] = useState(false);
-  const [introDone, setIntroDone] = useState(skipInitialLoading);
+  const appRevealed = true;
+  const introDone = true;
   const [activePage, setActivePage] = useState<ActivePage>('EXPLORE');
+  const [exploreVisionReveal, setExploreVisionReveal] = useState(false);
   
   // Custom states for interactive elements
   
   const [isFlickering, setIsFlickering] = useState(false);
   const [exploreScroll, setExploreScroll] = useState(0);
   const mainRef = useRef<HTMLElement>(null);
+  const previousPageRef = useRef<ActivePage>(activePage);
 
   useEffect(() => {
     const removeUnlock = installAudioUnlockListeners();
@@ -57,6 +43,23 @@ export default function App() {
       exitAboutFocusMode();
     }
   }, [activePage]);
+
+  useEffect(() => {
+    if (
+      appRevealed &&
+      introDone &&
+      activePage === 'EXPLORE' &&
+      previousPageRef.current !== 'EXPLORE'
+    ) {
+      setExploreVisionReveal(true);
+      const timeout = window.setTimeout(() => setExploreVisionReveal(false), 940);
+      previousPageRef.current = activePage;
+      return () => window.clearTimeout(timeout);
+    }
+
+    previousPageRef.current = activePage;
+    return undefined;
+  }, [activePage, appRevealed, introDone]);
 
   // 切页时重置主内容区滚动，避免上一页 scrollTop 影响布局感知
   useEffect(() => {
@@ -137,6 +140,9 @@ export default function App() {
   const navigateToPage = useCallback(
     (page: ActivePage) => {
       if (page === activePage) return;
+      if (page !== 'ABOUT') {
+        playJumpSound();
+      }
       setActivePage(page);
     },
     [activePage],
@@ -158,36 +164,20 @@ export default function App() {
       const PAGELIST: ActivePage[] = ['EXPLORE', 'WORKS', 'LOGS', 'ABOUT'];
       const currentIndex = PAGELIST.indexOf(activePage);
 
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const prevIndex = (currentIndex - 1 + PAGELIST.length) % PAGELIST.length;
-        void navigateToPage(PAGELIST[prevIndex]);
-        playJumpSound();
-      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const nextIndex = (currentIndex + 1) % PAGELIST.length;
-        void navigateToPage(PAGELIST[nextIndex]);
-        playJumpSound();
-      }
-    };
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const prevIndex = (currentIndex - 1 + PAGELIST.length) % PAGELIST.length;
+          void navigateToPage(PAGELIST[prevIndex]);
+        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const nextIndex = (currentIndex + 1) % PAGELIST.length;
+          void navigateToPage(PAGELIST[nextIndex]);
+        }
+      };
 
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [activePage, navigateToPage]);
-
-  const handleLoadingFlashStart = useCallback(() => {
-    setAppRevealed(true);
-    setIntroActive(true);
-  }, []);
-
-  const handleLoadingComplete = useCallback(() => {
-    setShowLoading(false);
-  }, []);
-
-  const handleIntroComplete = useCallback(() => {
-    setIntroActive(false);
-    setIntroDone(true);
-  }, []);
 
   const isLogsPage = activePage === 'LOGS';
 
@@ -202,37 +192,38 @@ export default function App() {
     {/* 3D 垫底；UI 壳层 z-10 叠在上方便于导航/页脚可见 */}
     <FirstPersonScene
       interactive={activePage === 'EXPLORE' && introDone}
-      introActive={introActive}
-      onIntroComplete={handleIntroComplete}
       activeSection={activePage}
     />
 
-    {showLoading && (
-      <LoadingScreen onComplete={handleLoadingComplete} onFlashStart={handleLoadingFlashStart} />
+    {exploreVisionReveal && (
+      <div className="explore-vision-reveal pointer-events-none fixed inset-0 z-[9]" aria-hidden />
+    )}
+
+    {activePage === 'ABOUT' && (
+      <div className="about-world-mask pointer-events-none fixed inset-0 z-[9]" aria-hidden />
+    )}
+
+    {activePage === 'LOGS' && (
+      <div className="blogs-world-mask pointer-events-none fixed inset-0 z-[9]" aria-hidden />
     )}
 
     <motion.div
-      className={`fixed inset-0 z-10 flex h-screen w-screen flex-col overflow-hidden pointer-events-none text-white font-mono select-none ${
+      className={`home-reveal fixed inset-0 z-10 flex h-screen w-screen flex-col overflow-hidden pointer-events-none text-white font-mono select-none ${
         isFlickering ? 'opacity-85' : 'opacity-100'
       }`}
       initial={false}
       animate={{
         opacity: appRevealed ? 1 : 0,
-        scale: appRevealed ? 1 : 1.02,
-        filter: appRevealed ? 'blur(0px) brightness(1)' : 'blur(6px) brightness(0.7)',
+        scale: 1,
+        filter: appRevealed ? 'blur(0px) brightness(1)' : 'blur(6px) brightness(0.72)',
       }}
       transition={{
-        opacity: { duration: 1.2, ease: [0.16, 1, 0.3, 1] },
-        scale: { duration: 1.35, ease: [0.16, 1, 0.3, 1] },
-        filter: { duration: 1.25, ease: [0.22, 1, 0.36, 1] },
+        opacity: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+        filter: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
       }}
     >
       
       {/* CRT / 扫描线装饰 — 不挡 3D 背景 */}
-      <div className="crt-overlay pointer-events-none" id="crt-layer" />
-      <div className="noise-bg pointer-events-none" id="noise-layer" />
-      <div className="scanlines fixed inset-0 z-30 pointer-events-none" id="scanlines-layer" />
-
       {/* Top Embedded Navigation HUD */}
       <div 
         style={{ 
@@ -261,26 +252,20 @@ export default function App() {
         }`}
       >
         <div
-          className={`w-full mx-auto ${activePage === 'LOGS' ? 'max-w-[1500px] overflow-visible' : 'max-w-7xl overflow-hidden'}`}
+          className={`w-full mx-auto ${activePage === 'LOGS' ? 'max-w-[1350px] overflow-visible' : 'max-w-7xl overflow-hidden'}`}
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activePage}
-              className="w-full"
-              initial={{ opacity: 0, x: 20, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, x: 0, filter: 'blur(0px)', y: 0 }}
-              exit={{ opacity: 0, x: -20, y: 0, filter: 'blur(0px)' }}
-              transition={{ duration: 0.32, ease: [0.16, 1, 0.32, 1] }}
-            >
-              {activePage === 'ABOUT' && (
-                <AboutSection />
-              )}
+          <div
+            key={activePage}
+            className="route-view-shell w-full"
+          >
+            {activePage === 'ABOUT' && (
+              <AboutSection />
+            )}
 
-              {activePage === 'LOGS' && (
-                <LogsSection />
-              )}
-            </motion.div>
-          </AnimatePresence>
+            {activePage === 'LOGS' && (
+              <LogsSection />
+            )}
+          </div>
         </div>
       </main>
 
@@ -299,14 +284,12 @@ export default function App() {
             const currentIndex = PAGELIST.indexOf(activePage);
             const prevIndex = (currentIndex - 1 + PAGELIST.length) % PAGELIST.length;
             void navigateToPage(PAGELIST[prevIndex]);
-            playJumpSound();
           }}
           onNext={() => {
             const PAGELIST: ActivePage[] = ['EXPLORE', 'WORKS', 'LOGS', 'ABOUT'];
             const currentIndex = PAGELIST.indexOf(activePage);
             const nextIndex = (currentIndex + 1) % PAGELIST.length;
             void navigateToPage(PAGELIST[nextIndex]);
-            playJumpSound();
           }}
         />
       </div>

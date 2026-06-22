@@ -1,4 +1,4 @@
-import { REBECCA_GLITCH_BURST, REBECCA_REFLECT } from '@/lib/rebecca-hologram-config';
+import { REBECCA_GLITCH_BURST } from '@/lib/rebecca-hologram-config';
 
 const BUILD04 = {
   x: 30.08109260609872,
@@ -28,5 +28,4 @@ export const BUILD04_EVA_HOLOGRAM = {
     ...REBECCA_GLITCH_BURST,
     phase: 3.05,
   },
-  reflect: REBECCA_REFLECT,
 } as const;

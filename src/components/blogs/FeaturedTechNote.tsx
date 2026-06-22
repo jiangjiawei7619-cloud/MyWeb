@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'motion/react';
 import BlogHudPanel from '@/components/blogs/BlogHudPanel';
 import type { TechNote } from '@/data/blogs';
 
@@ -8,17 +7,12 @@ type FeaturedTechNoteProps = {
   onToggle: () => void;
 };
 
-const accordionTransition = {
-  duration: 0.32,
-  ease: [0.16, 1, 0.3, 1],
-} as const;
-
 export default function FeaturedTechNote({ note, expanded, onToggle }: FeaturedTechNoteProps) {
   return (
     <BlogHudPanel variant="red" className="featured-tech-note group">
       <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)] md:gap-6">
         <div className="featured-tech-note__cover">
-          {note.cover && <img src={note.cover} alt={note.title} />}
+          {note.cover && <img src={note.cover} alt={note.title} loading="lazy" decoding="async" />}
           <div className="featured-tech-note__cover-code">cover_01</div>
         </div>
 
@@ -64,16 +58,8 @@ export default function FeaturedTechNote({ note, expanded, onToggle }: FeaturedT
             <span>{note.readTime}</span>
           </div>
 
-          <AnimatePresence initial={false}>
-            {expanded && (
-              <motion.div
-                key="featured-expanded"
-                initial={{ height: 0, opacity: 0, filter: 'blur(4px)' }}
-                animate={{ height: 'auto', opacity: 1, filter: 'blur(0px)' }}
-                exit={{ height: 0, opacity: 0, filter: 'blur(4px)' }}
-                transition={accordionTransition}
-                className="overflow-hidden"
-              >
+          {expanded && (
+            <div>
                 <p className="m-0 max-w-4xl font-mono text-[12px] leading-6 text-[#f2d8d4]/78 md:text-[13px]">
                   {note.summary}
                 </p>
@@ -88,9 +74,8 @@ export default function FeaturedTechNote({ note, expanded, onToggle }: FeaturedT
                 >
                   Read More -&gt;
                 </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
     </BlogHudPanel>

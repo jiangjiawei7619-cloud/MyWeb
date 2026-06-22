@@ -1,4 +1,5 @@
 import { useEffect, useRef, ReactNode } from 'react';
+import { useWorksWorldMode } from '@/lib/works-world-mode-context';
 import { initTilt } from '@/utils/tilt';
 
 interface TiltWrapperProps {
@@ -9,17 +10,17 @@ interface TiltWrapperProps {
 
 export default function TiltWrapper({ children, className = '', maxRotation = 5 }: TiltWrapperProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const worksWorldMode = useWorksWorldMode();
 
   useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    if (!el || worksWorldMode) return;
 
-    // Initialize 3D tilting controller on mount with 0.06 lerp damping
     const { destroy } = initTilt(el, { maxRotation, lerp: 0.06 });
     return () => {
       destroy();
     };
-  }, [maxRotation]);
+  }, [maxRotation, worksWorldMode]);
 
   return (
     <div

@@ -8,7 +8,8 @@ export const ABOUT_INTRO_PARAGRAPHS = [
 ] as const;
 
 /** 简介区 LinkedIn — 改成你的个人主页 URL */
-export const ABOUT_LINKEDIN_URL = 'https://www.linkedin.com/in/';
+export const ABOUT_LINKEDIN_URL = 'https://www.linkedin.com/in/javin-jiang-62697b3a5/';
+export const ABOUT_WECHAT_QR_SRC = '/wechat-qr.jpg';
 
 /** About 页右侧社交链接 — 直接改下面的 href 即可 */
 

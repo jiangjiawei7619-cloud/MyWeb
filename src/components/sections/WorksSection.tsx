@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { gsap } from 'gsap';
+import { motion } from 'motion/react';
 import { ProjectWork } from '@/lib/types';
 import { playClick, playGlitchDeng } from '@/utils/audio';
 import GlitchTitle from '@/components/ui/GlitchTitle';
@@ -7,6 +8,7 @@ import TiltWrapper from '@/components/ui/TiltWrapper';
 
 interface WorksSectionProps {
   projects: ProjectWork[];
+  active?: boolean;
 }
 
 export default function WorksSection({ projects }: WorksSectionProps) {
@@ -14,6 +16,7 @@ export default function WorksSection({ projects }: WorksSectionProps) {
   const [glowIndex, setGlowIndex] = useState(0);
   const [isGlitching, setIsGlitching] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isProjectNavChanging, setIsProjectNavChanging] = useState(false);
   const [titleGlitchTrigger, setTitleGlitchTrigger] = useState(0);
   
   // Transition state tracking the source and target project indices
@@ -28,48 +31,10 @@ export default function WorksSection({ projects }: WorksSectionProps) {
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const titleContainerRef = useRef<HTMLDivElement>(null);
 
-  // Button Selector Refs
-  const containerRef = useRef<HTMLDivElement>(null);
-  const buttonGlowRef = useRef<HTMLDivElement>(null);
-  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
-
-  // Smooth sliding indicator animation for project buttons (Springy snap over)
   useEffect(() => {
-    const activeBtn = buttonRefs.current[glowIndex];
-    if (activeBtn && buttonGlowRef.current && containerRef.current) {
-      const activeRect = activeBtn.getBoundingClientRect();
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const leftOffset = activeRect.left - containerRect.left;
-      const width = activeRect.width;
-
-      gsap.killTweensOf(buttonGlowRef.current);
-      gsap.to(buttonGlowRef.current, {
-        left: leftOffset,
-        width: width,
-        duration: 0.48,
-        ease: 'back.out(1.6)', // Spring elastic snap overshoot
-        overwrite: 'auto'
-      });
-    }
-  }, [glowIndex]);
-
-  // Adjust indicator on screen resize dynamically without sliding animations
-  useEffect(() => {
-    const handleResize = () => {
-      const activeBtn = buttonRefs.current[glowIndex];
-      if (activeBtn && buttonGlowRef.current && containerRef.current) {
-        const activeRect = activeBtn.getBoundingClientRect();
-        const containerRect = containerRef.current.getBoundingClientRect();
-        const leftOffset = activeRect.left - containerRect.left;
-        const width = activeRect.width;
-        gsap.set(buttonGlowRef.current, {
-          left: leftOffset,
-          width: width
-        });
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    setIsProjectNavChanging(true);
+    const timeout = window.setTimeout(() => setIsProjectNavChanging(false), 350);
+    return () => window.clearTimeout(timeout);
   }, [glowIndex]);
 
   // Clean up any GSAP tweens on unmount to prevent leaks
@@ -79,32 +44,29 @@ export default function WorksSection({ projects }: WorksSectionProps) {
       if (glitchImage1Ref.current) gsap.killTweensOf(glitchImage1Ref.current);
       if (glitchImage2Ref.current) gsap.killTweensOf(glitchImage2Ref.current);
       gsap.killTweensOf(titleContainerRef.current);
-      gsap.killTweensOf(buttonGlowRef.current);
     };
   }, []);
 
-  // Elastic bouncing entry of the new project's title block (Jelly-like overshoot)
   const animateTitleIn = () => {
-    if (titleContainerRef.current) {
-      gsap.fromTo(
-        titleContainerRef.current,
-        {
-          x: 120,
-          opacity: 0,
-          skewX: 12,
-          scaleX: 1.12,
-        },
-        {
-          x: 0,
-          opacity: 1,
-          skewX: 0,
-          scaleX: 1,
-          duration: 0.72,
-          ease: 'elastic.out(0.9, 0.48)',
-          clearProps: 'transform',
-        },
-      );
-    }
+    if (!titleContainerRef.current) return;
+    gsap.fromTo(
+      titleContainerRef.current,
+      {
+        x: 120,
+        opacity: 0,
+        skewX: 12,
+        scaleX: 1.12,
+      },
+      {
+        x: 0,
+        opacity: 1,
+        skewX: 0,
+        scaleX: 1,
+        duration: 0.72,
+        ease: 'elastic.out(0.9, 0.48)',
+        clearProps: 'transform',
+      },
+    );
   };
 
   // Complex CSS-Filter + random clip-path horizontal slicing glitch
@@ -228,7 +190,7 @@ export default function WorksSection({ projects }: WorksSectionProps) {
   };
 
   return (
-    <TiltWrapper className="w-full max-w-5xl mx-auto flex flex-col gap-6 relative select-none py-2 justify-center animate-fade-in">
+    <TiltWrapper className="w-full max-w-5xl mx-auto flex flex-col gap-6 relative select-none py-2 justify-center">
       {/* Upper Main Terminal Showcase */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center w-full">
         
@@ -256,9 +218,9 @@ export default function WorksSection({ projects }: WorksSectionProps) {
             </p>
           </div>
 
-          <div className="font-mono text-[12px] text-[#ffb3af]/80 leading-relaxed pt-1 max-w-md">
+          <p className="font-mono text-[12px] text-[#ffb3af]/80 leading-relaxed pt-1 max-w-md">
             {currentProject.description}
-          </div>
+          </p>
 
           {/* Controls & Tech Badges */}
           <div className="flex flex-wrap gap-1.5 pt-1">
@@ -384,32 +346,35 @@ export default function WorksSection({ projects }: WorksSectionProps) {
         </div>
 
         {/* Project Selector rounded red capsule row (弹过去的回弹动画) */}
-        <div 
-          ref={containerRef}
-          className="relative flex items-center gap-1 bg-black/45 backdrop-blur-md p-1 border border-white/5 rounded-full pointer-events-auto select-none overflow-hidden shrink-0 animate-fade-in"
-        >
-
-          {/* Animated red background backplate with cyber glowing shadow */}
-          <div
-            ref={buttonGlowRef}
-            className="absolute top-1 bottom-1 bg-[#ff5357] rounded-full shadow-[0_0_20px_rgba(255,83,87,0.85)] pointer-events-none z-0"
-            style={{ willChange: 'left, width' }}
-          />
-
+        <div className="relative flex items-center gap-1 bg-black/45 backdrop-blur-md p-1 border border-white/5 rounded-full pointer-events-auto select-none overflow-hidden shrink-0">
           {projects.map((project, idx) => {
             const isActive = glowIndex === idx;
             return (
               <button
                 key={project.id}
-                ref={(el) => { buttonRefs.current[idx] = el; }}
                 onClick={() => transitionToProject(idx)}
                 disabled={isTransitioning}
-                className={`relative rounded-full py-1.5 px-4 font-mono text-[10px] md:text-[11px] font-bold tracking-widest transition-all duration-300 select-none cursor-pointer outline-none border-none z-10 disabled:cursor-not-allowed ${
+                className={`relative rounded-full py-1.5 px-4 font-mono text-[10px] md:text-[11px] font-bold tracking-widest transition-colors duration-300 select-none cursor-pointer outline-none border-none z-10 disabled:cursor-not-allowed ${
                   isActive
                     ? 'text-black font-black saturate-150 drop-shadow-[0_0_3px_rgba(0,0,0,0.4)]'
                     : 'text-[#ffb3af] hover:text-[#ffdad8] hover:bg-white/5'
                 }`}
               >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeWorksProjectIndicator"
+                    className="absolute inset-0 bg-[#ff5357] rounded-full shadow-[0_0_20px_rgba(255,83,87,0.85)] pointer-events-none z-[-1] origin-center"
+                    animate={{
+                      scaleX: isProjectNavChanging ? [1, 1.18, 0.94, 1] : 1,
+                      scaleY: isProjectNavChanging ? [1, 0.84, 1.05, 1] : 1,
+                    }}
+                    transition={{
+                      layout: { type: 'spring', stiffness: 440, damping: 16, mass: 0.72 },
+                      scaleX: { duration: 0.35, ease: 'easeOut' },
+                      scaleY: { duration: 0.35, ease: 'easeOut' },
+                    }}
+                  />
+                )}
                 {project.title}
               </button>
             );

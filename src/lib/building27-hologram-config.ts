@@ -1,4 +1,4 @@
-import { REBECCA_GLITCH_BURST, REBECCA_REFLECT } from '@/lib/rebecca-hologram-config';
+import { REBECCA_GLITCH_BURST } from '@/lib/rebecca-hologram-config';
 
 const BUILDING27 = {
   x: -12.505923508773831,
@@ -30,7 +30,6 @@ export const BUILDING27_EVA_HOLOGRAM = {
     bodyBrightness: 2.7,
     bodyLumaCap: 1.08,
   },
-  reflect: REBECCA_REFLECT,
   breathing: {
     interval: 6.2,
     duration: 2.15,

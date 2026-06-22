@@ -46,6 +46,15 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
   uniform float uSignalDropoutSteps;
   uniform float uSignalDropoutBands;
   uniform float uSignalDropoutStrength;
+  uniform float uCheapPass;
+  uniform float uGlowThreshold;
+  uniform float uGlowSoftness;
+  uniform float uSaturationThreshold;
+  uniform float uEmissiveBoost;
+  uniform float uBaseBrightness;
+  uniform float uGlowPulseSpeed;
+  uniform float uGlowPulseStrength;
+  uniform float uScanlineStrength;
 
   varying vec2 vUv;
   varying vec3 vWorldPos;
@@ -69,15 +78,23 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
 
     vec4 tex = texture2D(uMap, signalUv);
     float lum = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
+    float maxChannel = max(tex.r, max(tex.g, tex.b));
+    float minChannel = min(tex.r, min(tex.g, tex.b));
+    float saturation = maxChannel - minChannel;
+    float neonMask = smoothstep(uGlowThreshold, uGlowThreshold + uGlowSoftness, lum);
+    neonMask *= smoothstep(uSaturationThreshold, uSaturationThreshold + 0.15, saturation);
+    neonMask *= mix(0.85, 1.25, clamp(saturation, 0.0, 1.0));
+    neonMask = clamp(neonMask, 0.0, 1.0);
     float alpha = smoothstep(0.035, 0.14, lum) * tex.a;
     if (alpha < 0.02) discard;
 
     float breathe = 0.96 + 0.04 * sin(uTime * 1.15);
-    float scan = sin((vUv.y + uTime * 0.18) * 220.0) * 0.012 + 0.988;
+    float scanWave = 0.5 + 0.5 * sin((vUv.y + uTime * 0.18) * 220.0);
+    float scan = 0.988 - uScanlineStrength * scanWave * 0.12;
     float tone = breathe * scan;
 
-    vec3 col = tex.rgb * uBrightness * tone;
-    float emissiveMask = smoothstep(0.14, 0.58, lum);
+    vec3 col = tex.rgb * uBrightness * uBaseBrightness * tone;
+    float emissiveMask = neonMask;
     if (uReflect < 0.5) {
       float camDist = length(uCamPos - vWorldPos);
       float distGain = mix(1.0, uDistFalloffMin, smoothstep(uDistFalloffNear, uDistFalloffFar, camDist));
@@ -91,25 +108,11 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
         col *= uLumaCap / lumaCore;
       }
 
-      // 霓虹溢光 — 轻 blur 采样 + 边缘光晕（仅本体）
-      vec2 texel = vec2(0.0018, 0.0018);
-      vec3 s0 = texture2D(uMap, signalUv + vec2(texel.x, 0.0)).rgb;
-      vec3 s1 = texture2D(uMap, signalUv - vec2(texel.x, 0.0)).rgb;
-      vec3 s2 = texture2D(uMap, signalUv + vec2(0.0, texel.y)).rgb;
-      vec3 s3 = texture2D(uMap, signalUv - vec2(0.0, texel.y)).rgb;
-      vec3 soft = (tex.rgb + s0 + s1 + s2 + s3) * 0.2;
-      float softLum = dot(soft, vec3(0.299, 0.587, 0.114));
-      float halo = smoothstep(0.05, 0.32, softLum) * emissiveMask;
-      float rim = smoothstep(0.1, 0.42, lum) * (1.0 - smoothstep(0.62, 0.96, lum));
-      vec3 spillTint = soft * vec3(1.14, 0.9, 0.7);
-      float spillGain = uNeonSpill * distGain;
-
-      col += spillTint * halo * spillGain * 0.62;
-      col += tex.rgb * rim * spillGain * vec3(1.18, 0.92, 0.68) * 0.38;
-
       float bloomScale = uBloomBoost * distGain;
-      col += tex.rgb * emissiveMask * bloomScale;
-      col += tex.rgb * emissiveMask * emissiveMask * bloomScale * 0.28;
+      float pulse = 1.0 + sin(uTime * uGlowPulseSpeed) * uGlowPulseStrength;
+      float reducedPass = mix(1.0, 0.72, step(0.5, uCheapPass));
+      vec3 emissiveGlow = tex.rgb * emissiveMask * bloomScale * uEmissiveBoost * pulse * reducedPass;
+      col += emissiveGlow;
 
       float lumaOut = dot(col, vec3(0.299, 0.587, 0.114));
       float spillCap = uLumaCap * 1.22;
@@ -123,8 +126,7 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
     a *= 1.0 - dropoutCut * 0.34;
 
     if (uReflect > 0.5) {
-      col = tex.rgb * uBrightness * tone * uReflectDimmer;
-      float emissiveMask = smoothstep(0.16, 0.68, lum);
+      col = tex.rgb * uBrightness * uBaseBrightness * tone * uReflectDimmer;
       a = max(a, emissiveMask * uReflectAlphaFloor) * uReflectDimmer;
       col *= 1.0 - dropoutCut * 0.2;
       a *= 1.0 - dropoutCut * 0.22;

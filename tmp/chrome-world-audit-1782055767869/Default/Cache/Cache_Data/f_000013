@@ -1,0 +1,195 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:\\Users\\PC1\\Desktop\\Myweb\\src\\components\\blogs\\TechNoteAccordion.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c1bd64ec"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import BlogHudPanel from "/src/components/blogs/BlogHudPanel.tsx";
+export default function TechNoteAccordion({
+  notes,
+  expandedTechNoteIds,
+  onToggleNote,
+  className = ""
+}) {
+  return /* @__PURE__ */ jsxDEV(
+    BlogHudPanel,
+    {
+      variant: "red",
+      className,
+      header: /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between gap-4", children: [
+        /* @__PURE__ */ jsxDEV("h3", { className: "m-0 font-mono text-[13px] font-bold uppercase text-[#ff5357]", children: "Tech Notes" }, void 0, false, {
+          fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+          lineNumber: 23,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "font-mono text-[10px] font-bold uppercase text-[#ff5357]/80", children: "View All ->" }, void 0, false, {
+          fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+          lineNumber: 26,
+          columnNumber: 11
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+        lineNumber: 22,
+        columnNumber: 7
+      }, this),
+      children: /* @__PURE__ */ jsxDEV("div", { className: "space-y-3", children: notes.map((note) => {
+        const expanded = expandedTechNoteIds.includes(note.id);
+        return /* @__PURE__ */ jsxDEV("article", { className: `tech-note-card ${expanded ? "tech-note-card--expanded" : ""}`, children: /* @__PURE__ */ jsxDEV("div", { className: "tech-note-card__inner", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "tech-note-card__cover", children: [
+            note.cover && /* @__PURE__ */ jsxDEV("img", { src: note.cover, alt: note.title, loading: "lazy", decoding: "async" }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+              lineNumber: 40,
+              columnNumber: 34
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: note.id.slice(0, 7) }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+              lineNumber: 41,
+              columnNumber: 19
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+            lineNumber: 39,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "min-w-0 flex-1", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-start justify-between gap-3", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "min-w-0", children: [
+                /* @__PURE__ */ jsxDEV("div", { className: "mb-1 flex flex-wrap items-center gap-2", children: [
+                  /* @__PURE__ */ jsxDEV("h4", { className: "m-0 text-[16px] font-bold leading-tight text-[#f5dbd8] md:text-[18px]", children: note.title }, void 0, false, {
+                    fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                    lineNumber: 48,
+                    columnNumber: 25
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("span", { className: "rounded-sm border border-[#ff5357]/45 px-2 py-0.5 font-mono text-[8px] uppercase text-[#ff8d8f]", children: "Tech Notes" }, void 0, false, {
+                    fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                    lineNumber: 51,
+                    columnNumber: 25
+                  }, this)
+                ] }, void 0, true, {
+                  fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                  lineNumber: 47,
+                  columnNumber: 23
+                }, this),
+                /* @__PURE__ */ jsxDEV("p", { className: "m-0 font-mono text-[11px] leading-5 text-[#f4d8d3]/58 md:text-[12px]", children: note.summary }, void 0, false, {
+                  fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                  lineNumber: 55,
+                  columnNumber: 23
+                }, this)
+              ] }, void 0, true, {
+                fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                lineNumber: 46,
+                columnNumber: 21
+              }, this),
+              /* @__PURE__ */ jsxDEV(
+                "button",
+                {
+                  type: "button",
+                  "aria-label": expanded ? `Collapse ${note.title}` : `Expand ${note.title}`,
+                  "aria-expanded": expanded,
+                  onClick: () => onToggleNote(note.id),
+                  className: "blog-icon-button blog-icon-button--red shrink-0",
+                  children: /* @__PURE__ */ jsxDEV("span", { className: `material-symbols-outlined transition-transform duration-300 ${expanded ? "rotate-180" : ""}`, children: "keyboard_arrow_down" }, void 0, false, {
+                    fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                    lineNumber: 67,
+                    columnNumber: 23
+                  }, this)
+                },
+                void 0,
+                false,
+                {
+                  fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                  lineNumber: 60,
+                  columnNumber: 21
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+              lineNumber: 45,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "mt-3 flex flex-wrap gap-2", children: note.tags.map(
+              (tag) => /* @__PURE__ */ jsxDEV("span", { className: "blog-tag", children: tag }, tag, false, {
+                fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                lineNumber: 75,
+                columnNumber: 21
+              }, this)
+            ) }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+              lineNumber: 73,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[10px] uppercase text-white/42", children: [
+              /* @__PURE__ */ jsxDEV("span", { children: note.date }, void 0, false, {
+                fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                lineNumber: 82,
+                columnNumber: 21
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { children: note.readTime }, void 0, false, {
+                fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+                lineNumber: 83,
+                columnNumber: 21
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+              lineNumber: 81,
+              columnNumber: 19
+            }, this),
+            expanded && note.content && /* @__PURE__ */ jsxDEV("p", { className: "mt-3 border-t border-white/10 pt-3 font-mono text-[12px] leading-6 text-[#9cf8ff]/66", children: note.content }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+              lineNumber: 87,
+              columnNumber: 19
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+            lineNumber: 44,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+          lineNumber: 38,
+          columnNumber: 15
+        }, this) }, note.id, false, {
+          fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+          lineNumber: 37,
+          columnNumber: 13
+        }, this);
+      }) }, void 0, false, {
+        fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+        lineNumber: 32,
+        columnNumber: 7
+      }, this)
+    },
+    void 0,
+    false,
+    {
+      fileName: "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx",
+      lineNumber: 18,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c = TechNoteAccordion;
+var _c;
+$RefreshReg$(_c, "TechNoteAccordion");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/Users/PC1/Desktop/Myweb/src/components/blogs/TechNoteAccordion.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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UUFBWjtBQUFBO0FBQUE7QUFBQTtBQUFBLHFCQUFpQjtBQUFBLGNBQ2pCLHVCQUFDLFVBQU1WLGVBQUtXLFlBQVo7QUFBQTtBQUFBO0FBQUE7QUFBQSxxQkFBcUI7QUFBQSxpQkFGdkI7QUFBQTtBQUFBO0FBQUE7QUFBQSxtQkFHQTtBQUFBLFlBRUNWLFlBQVlELEtBQUtZLFdBQ2hCLHVCQUFDLE9BQUUsV0FBVSx3RkFDVlosZUFBS1ksV0FEUjtBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQUVBO0FBQUEsZUE3Q0o7QUFBQTtBQUFBO0FBQUE7QUFBQSxpQkErQ0E7QUFBQSxhQXJERjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBc0RBLEtBdkRZWixLQUFLRyxJQUFuQjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBd0RBO0FBQUEsTUFFSixDQUFDLEtBL0RIO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFnRUE7QUFBQTtBQUFBLElBOUVGO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxFQStFQTtBQUVKO0FBQUNVLEtBeEZ1Qm5CO0FBQWlCLElBQUFtQjtBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJCbG9nSHVkUGFuZWwiLCJUZWNoTm90ZUFjY29yZGlvbiIsIm5vdGVzIiwiZXhwYW5kZWRUZWNoTm90ZUlkcyIsIm9uVG9nZ2xlTm90ZSIsImNsYXNzTmFtZSIsIm1hcCIsIm5vdGUiLCJleHBhbmRlZCIsImluY2x1ZGVzIiwiaWQiLCJjb3ZlciIsInRpdGxlIiwic2xpY2UiLCJzdW1tYXJ5IiwidGFncyIsInRhZyIsImRhdGUiLCJyZWFkVGltZSIsImNvbnRlbnQiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJUZWNoTm90ZUFjY29yZGlvbi50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IEJsb2dIdWRQYW5lbCBmcm9tICdAL2NvbXBvbmVudHMvYmxvZ3MvQmxvZ0h1ZFBhbmVsJztcbmltcG9ydCB0eXBlIHsgVGVjaE5vdGUgfSBmcm9tICdAL2RhdGEvYmxvZ3MnO1xuXHJcbnR5cGUgVGVjaE5vdGVBY2NvcmRpb25Qcm9wcyA9IHtcclxuICBub3RlczogVGVjaE5vdGVbXTtcclxuICBleHBhbmRlZFRlY2hOb3RlSWRzOiBzdHJpbmdbXTtcclxuICBvblRvZ2dsZU5vdGU6IChpZDogc3RyaW5nKSA9PiB2b2lkO1xyXG4gIGNsYXNzTmFtZT86IHN0cmluZztcclxufTtcclxuXHJcbmV4cG9ydCBkZWZhdWx0IGZ1bmN0aW9uIFRlY2hOb3RlQWNjb3JkaW9uKHtcclxuICBub3RlcyxcclxuICBleHBhbmRlZFRlY2hOb3RlSWRzLFxyXG4gIG9uVG9nZ2xlTm90ZSxcclxuICBjbGFzc05hbWUgPSAnJyxcclxufTogVGVjaE5vdGVBY2NvcmRpb25Qcm9wcykge1xyXG4gIHJldHVybiAoXHJcbiAgICA8QmxvZ0h1ZFBhbmVsXHJcbiAgICAgIHZhcmlhbnQ9XCJyZWRcIlxyXG4gICAgICBjbGFzc05hbWU9e2NsYXNzTmFtZX1cclxuICAgICAgaGVhZGVyPXtcclxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBnYXAtNFwiPlxyXG4gICAgICAgICAgPGgzIGNsYXNzTmFtZT1cIm0tMCBmb250LW1vbm8gdGV4dC1bMTNweF0gZm9udC1ib2xkIHVwcGVyY2FzZSB0ZXh0LVsjZmY1MzU3XVwiPlxyXG4gICAgICAgICAgICBUZWNoIE5vdGVzXHJcbiAgICAgICAgICA8L2gzPlxyXG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZm9udC1tb25vIHRleHQtWzEwcHhdIGZvbnQtYm9sZCB1cHBlcmNhc2UgdGV4dC1bI2ZmNTM1N10vODBcIj5cclxuICAgICAgICAgICAgVmlldyBBbGwgLSZndDtcclxuICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICA8L2Rpdj5cclxuICAgICAgfVxyXG4gICAgPlxyXG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktM1wiPlxyXG4gICAgICAgIHtub3Rlcy5tYXAoKG5vdGUpID0+IHtcclxuICAgICAgICAgIGNvbnN0IGV4cGFuZGVkID0gZXhwYW5kZWRUZWNoTm90ZUlkcy5pbmNsdWRlcyhub3RlLmlkKTtcclxuXHJcbiAgICAgICAgICByZXR1cm4gKFxyXG4gICAgICAgICAgICA8YXJ0aWNsZSBrZXk9e25vdGUuaWR9IGNsYXNzTmFtZT17YHRlY2gtbm90ZS1jYXJkICR7ZXhwYW5kZWQgPyAndGVjaC1ub3RlLWNhcmQtLWV4cGFuZGVkJyA6ICcnfWB9PlxyXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidGVjaC1ub3RlLWNhcmRfX2lubmVyXCI+XHJcbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInRlY2gtbm90ZS1jYXJkX19jb3ZlclwiPlxyXG4gICAgICAgICAgICAgICAgICB7bm90ZS5jb3ZlciAmJiA8aW1nIHNyYz17bm90ZS5jb3Zlcn0gYWx0PXtub3RlLnRpdGxlfSBsb2FkaW5nPVwibGF6eVwiIGRlY29kaW5nPVwiYXN5bmNcIiAvPn1cclxuICAgICAgICAgICAgICAgICAgPHNwYW4+e25vdGUuaWQuc2xpY2UoMCwgNyl9PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaW4tdy0wIGZsZXgtMVwiPlxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtc3RhcnQganVzdGlmeS1iZXR3ZWVuIGdhcC0zXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJtaW4tdy0wXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm1iLTEgZmxleCBmbGV4LXdyYXAgaXRlbXMtY2VudGVyIGdhcC0yXCI+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDxoNCBjbGFzc05hbWU9XCJtLTAgdGV4dC1bMTZweF0gZm9udC1ib2xkIGxlYWRpbmctdGlnaHQgdGV4dC1bI2Y1ZGJkOF0gbWQ6dGV4dC1bMThweF1cIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICB7bm90ZS50aXRsZX1cclxuICAgICAgICAgICAgICAgICAgICAgICAgPC9oND5cclxuICAgICAgICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwicm91bmRlZC1zbSBib3JkZXIgYm9yZGVyLVsjZmY1MzU3XS80NSBweC0yIHB5LTAuNSBmb250LW1vbm8gdGV4dC1bOHB4XSB1cHBlcmNhc2UgdGV4dC1bI2ZmOGQ4Zl1cIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAgICBUZWNoIE5vdGVzXHJcbiAgICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICAgIDwvZGl2PlxyXG4gICAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwibS0wIGZvbnQtbW9ubyB0ZXh0LVsxMXB4XSBsZWFkaW5nLTUgdGV4dC1bI2Y0ZDhkM10vNTggbWQ6dGV4dC1bMTJweF1cIj5cbiAgICAgICAgICAgICAgICAgICAgICAgIHtub3RlLnN1bW1hcnl9XG4gICAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgICA8L2Rpdj5cclxuXHJcbiAgICAgICAgICAgICAgICAgICAgPGJ1dHRvblxyXG4gICAgICAgICAgICAgICAgICAgICAgdHlwZT1cImJ1dHRvblwiXHJcbiAgICAgICAgICAgICAgICAgICAgICBhcmlhLWxhYmVsPXtleHBhbmRlZCA/IGBDb2xsYXBzZSAke25vdGUudGl0bGV9YCA6IGBFeHBhbmQgJHtub3RlLnRpdGxlfWB9XHJcbiAgICAgICAgICAgICAgICAgICAgICBhcmlhLWV4cGFuZGVkPXtleHBhbmRlZH1cclxuICAgICAgICAgICAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IG9uVG9nZ2xlTm90ZShub3RlLmlkKX1cclxuICAgICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImJsb2ctaWNvbi1idXR0b24gYmxvZy1pY29uLWJ1dHRvbi0tcmVkIHNocmluay0wXCJcclxuICAgICAgICAgICAgICAgICAgICA+XHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9e2BtYXRlcmlhbC1zeW1ib2xzLW91dGxpbmVkIHRyYW5zaXRpb24tdHJhbnNmb3JtIGR1cmF0aW9uLTMwMCAke2V4cGFuZGVkID8gJ3JvdGF0ZS0xODAnIDogJyd9YH0+XHJcbiAgICAgICAgICAgICAgICAgICAgICAgIGtleWJvYXJkX2Fycm93X2Rvd25cclxuICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICA8L2J1dHRvbj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm10LTMgZmxleCBmbGV4LXdyYXAgZ2FwLTJcIj5cclxuICAgICAgICAgICAgICAgICAgICB7bm90ZS50YWdzLm1hcCgodGFnKSA9PiAoXHJcbiAgICAgICAgICAgICAgICAgICAgICA8c3BhbiBrZXk9e3RhZ30gY2xhc3NOYW1lPVwiYmxvZy10YWdcIj5cclxuICAgICAgICAgICAgICAgICAgICAgICAge3RhZ31cclxuICAgICAgICAgICAgICAgICAgICAgIDwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgICApKX1cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm10LTMgZmxleCBmbGV4LXdyYXAgZ2FwLXgtNSBnYXAteS0xIGZvbnQtbW9ubyB0ZXh0LVsxMHB4XSB1cHBlcmNhc2UgdGV4dC13aGl0ZS80MlwiPlxyXG4gICAgICAgICAgICAgICAgICAgIDxzcGFuPntub3RlLmRhdGV9PC9zcGFuPlxyXG4gICAgICAgICAgICAgICAgICAgIDxzcGFuPntub3RlLnJlYWRUaW1lfTwvc3Bhbj5cclxuICAgICAgICAgICAgICAgICAgPC9kaXY+XHJcblxyXG4gICAgICAgICAgICAgICAgICB7ZXhwYW5kZWQgJiYgbm90ZS5jb250ZW50ICYmIChcbiAgICAgICAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwibXQtMyBib3JkZXItdCBib3JkZXItd2hpdGUvMTAgcHQtMyBmb250LW1vbm8gdGV4dC1bMTJweF0gbGVhZGluZy02IHRleHQtWyM5Y2Y4ZmZdLzY2XCI+XG4gICAgICAgICAgICAgICAgICAgICAge25vdGUuY29udGVudH1cbiAgICAgICAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgICA8L2Rpdj5cclxuICAgICAgICAgICAgPC9hcnRpY2xlPlxyXG4gICAgICAgICAgKTtcclxuICAgICAgICB9KX1cclxuICAgICAgPC9kaXY+XHJcbiAgICA8L0Jsb2dIdWRQYW5lbD5cclxuICApO1xyXG59XHJcbiJdLCJmaWxlIjoiQzovVXNlcnMvUEMxL0Rlc2t0b3AvTXl3ZWIvc3JjL2NvbXBvbmVudHMvYmxvZ3MvVGVjaE5vdGVBY2NvcmRpb24udHN4In0=

@@ -28,10 +28,11 @@ export type WorldLabelTarget = {
 };
 
 export function isWorldLabelsEnabled(): boolean {
-  if (typeof window === 'undefined') return true;
+  if (typeof window === 'undefined') return false;
   const param = new URLSearchParams(window.location.search).get('worldLabels');
+  if (param === '1' || param === 'true') return true;
   if (param === '0') return false;
-  return true;
+  return false;
 }
 
 export function formatWorldLabelId(kind: WorldLabelKind, index: number): string {

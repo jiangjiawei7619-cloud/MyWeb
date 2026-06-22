@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'motion/react';
 import BlogHudPanel from '@/components/blogs/BlogHudPanel';
 import type { DailyLog } from '@/data/blogs';
 
@@ -56,20 +55,7 @@ export default function DailyTimeline({
                 </span>
               </button>
 
-              <AnimatePresence initial={false}>
-                {expanded && log.content && (
-                  <motion.div
-                    key={`${log.id}-content`}
-                    initial={{ height: 0, opacity: 0, filter: 'blur(4px)' }}
-                    animate={{ height: 'auto', opacity: 1, filter: 'blur(0px)' }}
-                    exit={{ height: 0, opacity: 0, filter: 'blur(4px)' }}
-                    transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                    className="overflow-hidden"
-                  >
-                    <p className="daily-timeline-content">{log.content}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {expanded && log.content && <p className="daily-timeline-content">{log.content}</p>}
             </article>
           );
         })}

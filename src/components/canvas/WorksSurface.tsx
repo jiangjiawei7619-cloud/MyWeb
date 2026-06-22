@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Html } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import WorksContent from '@/components/sections/WorksContent';
 import { BUILDING08_C_ANCHOR, DEBUG_BUILDING_ANCHORS } from '@/lib/section-camera-presets';
+import type { ActivePage } from '@/lib/types';
+import { WorksWorldModeContext } from '@/lib/works-world-mode-context';
 import { DEBUG_WORKS_SURFACE_FIT } from '@/lib/works-surface-config';
 
 function DebugWireRect({
@@ -26,65 +29,66 @@ function DebugWireRect({
   );
 }
 
-export default function WorksSurface() {
+export default function WorksSurface({
+  activeSection = 'EXPLORE',
+}: {
+  activeSection?: ActivePage;
+}) {
+  const { gl } = useThree();
   const layout = BUILDING08_C_ANCHOR;
+  const panelGroupRef = useRef<THREE.Group>(null);
   const normal = useMemo(
     () => new THREE.Vector3(...layout.normal),
     [layout.normal],
+  );
+  const portal = useMemo(
+    () => ({ current: gl.domElement.parentElement as HTMLElement }),
+    [gl.domElement],
   );
   const showDebug = DEBUG_WORKS_SURFACE_FIT || DEBUG_BUILDING_ANCHORS;
 
   return (
     <group name="works-surface-building08-c">
-      {/* 贴 C 面外侧的背景板 — 世界单位铺满 92% 面宽×高 */}
-      <mesh
-        position={layout.panelPosition}
-        rotation={layout.panelRotation}
-        renderOrder={2}
-      >
-        <planeGeometry args={[layout.panelWidth, layout.panelHeight]} />
-        <meshBasicMaterial
-          color="#0a0812"
-          transparent
-          opacity={0.94}
-          toneMapped={false}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <Html
-        transform
-        center
-        occlude={false}
-        position={layout.panelPosition}
-        rotation={layout.panelRotation}
-        scale={layout.htmlScale}
-        distanceFactor={layout.htmlDistanceFactor}
-        zIndexRange={[35, 0]}
-        style={{ pointerEvents: 'auto' }}
-      >
-        <div
-          className="works-world-panel works-content-world-mode"
-          style={{
-            width: `${layout.panelPxWidth}px`,
-            height: `${layout.panelPxHeight}px`,
-          }}
-          onPointerEnter={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
-          onWheel={(e) => e.stopPropagation()}
+      <group ref={panelGroupRef} position={layout.panelPosition} rotation={layout.panelRotation}>
+        <mesh renderOrder={12}>
+          <planeGeometry args={[layout.panelWidth, layout.panelHeight]} />
+          <meshBasicMaterial
+            color="#000000"
+            toneMapped={false}
+            depthWrite
+            depthTest
+            polygonOffset
+            polygonOffsetFactor={-1}
+            polygonOffsetUnits={-1}
+          />
+        </mesh>
+        <Html
+          transform
+          center
+          portal={portal}
+          eps={0}
+          position={[0, 0, 0.004]}
+          scale={layout.htmlScale}
+          distanceFactor={layout.htmlDistanceFactor}
+          style={{ pointerEvents: 'auto' }}
         >
-          <div
-            className="works-content-root"
-            style={{
-              width: `${layout.designWidth}px`,
-              height: `${layout.designHeight}px`,
-              ['--works-cover-scale' as string]: String(layout.contentCoverScale),
-            }}
-          >
-            <WorksContent />
-          </div>
-        </div>
-      </Html>
+          <WorksWorldModeContext.Provider value>
+            <div
+              className="works-world-panel works-content-world-mode"
+              style={{
+                width: `${layout.panelPxWidth}px`,
+                height: `${layout.panelPxHeight}px`,
+              }}
+              onPointerEnter={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <div className="works-content-root">
+                <WorksContent active={activeSection === 'WORKS'} />
+              </div>
+            </div>
+          </WorksWorldModeContext.Provider>
+        </Html>
+      </group>
 
       {showDebug && (
         <group>
@@ -124,14 +128,10 @@ export default function WorksSurface() {
                 {(layout.faceMargin * 100).toFixed(0)}%)
               </div>
               <div>
-                design {layout.designWidth} × {layout.designHeight} px
+                design {layout.designWidth} × {layout.designHeight} px · htmlScale{' '}
+                {layout.htmlScale.toFixed(5)}
               </div>
-              <div>
-                dom {layout.panelPxWidth.toFixed(0)} × {layout.panelPxHeight.toFixed(0)} px · scale{' '}
-                {layout.htmlScale.toFixed(5)} · df {layout.htmlDistanceFactor}
-              </div>
-              <div>contentCoverScale {layout.contentCoverScale.toFixed(3)}</div>
-              <div>offset {layout.surfaceOffset} m</div>
+              <div>distanceFactor {layout.htmlDistanceFactor}</div>
             </div>
           </Html>
         </group>

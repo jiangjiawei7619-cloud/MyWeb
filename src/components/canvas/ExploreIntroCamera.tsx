@@ -1,4 +1,4 @@
-import { useRef, type RefObject } from 'react';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { FirstPersonController } from '@/physics/firstPersonController';
@@ -32,6 +32,24 @@ export function yawPitchFromLookAt(from: THREE.Vector3, to: THREE.Vector3) {
   return { yaw, pitch };
 }
 
+/** 由眼位 + yaw/pitch 推算视线落点（与 FirstPersonController.viewForward 同向） */
+export function lookTargetFromYawPitch(
+  eye: THREE.Vector3,
+  yaw: number,
+  pitch: number,
+  distance = 14,
+  out = new THREE.Vector3(),
+): THREE.Vector3 {
+  return out
+    .set(
+      -Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(pitch),
+      -Math.cos(yaw) * Math.cos(pitch),
+    )
+    .multiplyScalar(distance)
+    .add(eye);
+}
+
 const START_ORIENT = yawPitchFromLookAt(START, START_LOOK);
 const END_ORIENT = yawPitchFromLookAt(END, END_LOOK);
 
@@ -58,6 +76,14 @@ export default function ExploreIntroCamera({
   const { camera } = useThree();
   const startedAt = useRef<number | null>(null);
   const finished = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!active || !(camera instanceof THREE.PerspectiveCamera)) return;
+    camera.position.copy(START);
+    applyYawPitch(camera, START_ORIENT.yaw, START_ORIENT.pitch);
+    camera.fov = START_FOV;
+    camera.updateProjectionMatrix();
+  }, [active, camera]);
 
   useFrame(({ clock }) => {
     if (!active || finished.current) return;
@@ -102,4 +128,8 @@ export default function ExploreIntroCamera({
   return null;
 }
 
-export { START as EXPLORE_INTRO_CAMERA_START, START_FOV as EXPLORE_INTRO_CAMERA_FOV };
+export {
+  START as EXPLORE_INTRO_CAMERA_START,
+  START_FOV as EXPLORE_INTRO_CAMERA_FOV,
+  END_ORIENT as EXPLORE_INTRO_END_ORIENT,
+};

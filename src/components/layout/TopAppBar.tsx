@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ActivePage } from '@/lib/types';
-import { playJumpSound } from '@/utils/audio';
 import GlitchTitle from '@/components/ui/GlitchTitle';
 import ExploreKeyHints from '@/components/ui/ExploreKeyHints';
 
@@ -46,7 +45,6 @@ export default function TopAppBar({
   }, []);
 
   const handleNavClick = (page: ActivePage) => {
-    playJumpSound();
     onPageChange(page);
   };
 

@@ -7,7 +7,6 @@ export default function ExploreBuild04Hologram() {
       texturePath={BUILD04_EVA_HOLOGRAM.texturePath}
       placement={BUILD04_EVA_HOLOGRAM.placement}
       burst={BUILD04_EVA_HOLOGRAM.burst}
-      reflect={BUILD04_EVA_HOLOGRAM.reflect}
     />
   );
 }

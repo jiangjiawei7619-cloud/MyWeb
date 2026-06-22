@@ -9,12 +9,11 @@ import {
   type ExploreNeonSign,
   type ExplorePylon,
 } from '@/lib/explore-city-layout';
-import { EXPLORE_GROUND_REFLECTION, createBrickGridUniforms, createExploreMirrorUniforms } from '@/lib/explore-ground-reflection';
-import FloorLightingAccents from '@/components/canvas/FloorLightingAccents';
 import ExploreWorldLabels from '@/components/canvas/ExploreWorldLabels';
 import { isWorldLabelsEnabled } from '@/lib/explore-world-labels';
 import { POSTER_GLITCH_BURST } from '@/lib/explore-poster-glitch';
 import { EXPLORE_DISTANCE_LOD } from '@/lib/explore-distance-lod';
+import { resetNearEmissiveCount } from '@/lib/explore-emissive-pressure';
 import {
   createBuildingTextureUniforms,
   getBuildingTextureUrls,
@@ -30,18 +29,49 @@ import {
   exploreCityAntennaVert,
   exploreCityBuildingFrag,
   exploreCityBuildingVert,
-  exploreCityPoolFrag,
-  exploreCityPoolVert,
   exploreNeonSignFrag,
   exploreNeonSignVert,
 } from '@/shaders/exploreCity.glsl';
+import { useRenderBudget } from '@/world/RenderBudgetSystem';
+import { getWorldFeatureFlags } from '@/lib/world-feature-flags';
 
-const { mirrorLayer, groundMode, cyberTiles } = EXPLORE_GROUND_REFLECTION;
-const mirrorUniforms = createExploreMirrorUniforms();
-const brickGridUniforms = createBrickGridUniforms();
-/** cyber 模式默认保留几何镜像，补足霓虹 emissive 倒影 */
-const useGeometricMirrors =
-  groundMode === 'legacy' || cyberTiles.hybridGeometricMirrors;
+function createInactiveMirrorUniforms() {
+  return {
+    uReflectFadeDepth: { value: 1 },
+    uReflectDistNear: { value: 0 },
+    uReflectDistFar: { value: 1 },
+    uReflectDistStrength: { value: 0 },
+    uReflectFresnelPower: { value: 1 },
+    uReflectFresnelBoost: { value: 1 },
+    uReflectBlurNear: { value: 0 },
+    uReflectBlurFar: { value: 1 },
+    uReflectBlurFogMix: { value: 0 },
+    uCamPos: { value: new THREE.Vector3() },
+  };
+}
+
+function createInactiveBrickUniforms() {
+  return {
+    uBrickPitch: { value: 1 },
+    uBrickGap: { value: 0 },
+    uBrickOrigin: { value: new THREE.Vector2() },
+    uReflectSurfacePass: { value: 0 },
+    uSeamReflectGain: { value: 0 },
+    uSurfaceReflectGain: { value: 0 },
+    uSeamBlurScale: { value: 1 },
+    uSurfaceBlurScale: { value: 1 },
+    uUseEdgeGapMask: { value: 0 },
+    uGapWidthFrac: { value: 0 },
+    uGapFeather: { value: 0 },
+    uReflectionSeamDistortion: { value: 0 },
+    uSeamDistortionNoiseScale: { value: 1 },
+    uSeamDistortionSpeed: { value: 0 },
+    uDebugDistortedReflection: { value: 0 },
+  };
+}
+
+const mirrorUniforms = createInactiveMirrorUniforms();
+const brickGridUniforms = createInactiveBrickUniforms();
 
 type NeonSignTier = 'hero' | 'normal' | 'background';
 
@@ -228,84 +258,6 @@ function ExploreBuildings({
   );
 
   return <instancedMesh ref={meshRef} args={[geometry, material, count]} renderOrder={2} />;
-}
-
-/** 楼宇地面下翻转镜像 — 与 CyberGrid City reflectRef 相同 */
-function ExploreBuildingReflect({
-  buildings,
-  uniforms,
-  surfacePass = false,
-}: {
-  buildings: ExploreBuilding[];
-  uniforms: Record<string, THREE.IUniform>;
-  surfacePass?: boolean;
-}) {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const count = buildings.length;
-
-  const seeds = useMemo(() => Float32Array.from(buildings.map((b) => b.seed)), [buildings]);
-  const heights = useMemo(() => Float32Array.from(buildings.map((b) => b.h)), [buildings]);
-  const types = useMemo(() => Float32Array.from(buildings.map((b) => b.type)), [buildings]);
-  const materials = useMemo(() => Float32Array.from(buildings.map((b) => b.material)), [buildings]);
-
-  const geometry = useMemo(() => {
-    const g = new THREE.BoxGeometry(1, 1, 1);
-    g.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds, 1));
-    g.setAttribute('aHeight', new THREE.InstancedBufferAttribute(heights, 1));
-    g.setAttribute('aType', new THREE.InstancedBufferAttribute(types, 1));
-    g.setAttribute('aMaterial', new THREE.InstancedBufferAttribute(materials, 1));
-    return g;
-  }, [seeds, heights, types, materials]);
-
-  const matrices = useMemo(() => {
-    const dummy = new THREE.Object3D();
-    return buildings.map((b) => {
-      const cy = b.yBase + b.h / 2;
-      dummy.position.set(b.x, -cy, b.z);
-      dummy.scale.set(b.w, -b.h, b.d);
-      dummy.rotation.set(0, 0, 0);
-      dummy.updateMatrix();
-      return dummy.matrix.clone();
-    });
-  }, [buildings]);
-
-  useEffect(() => {
-    applyInstancedMatrices(meshRef.current, matrices);
-  }, [matrices]);
-
-  const reflectUniforms = useMemo(() => {
-    const u = { ...uniforms };
-    u.uReflect = { value: 1 };
-    u.uReflectGain = { value: mirrorLayer.buildingReflectGain };
-    u.uReflectBoost = { value: mirrorLayer.buildingReflectBoost };
-    u.uNeonReflect = { value: mirrorLayer.buildingNeonReflect };
-    u.uReflectSurfacePass = { value: surfacePass ? 1 : 0 };
-    Object.assign(u, mirrorUniforms);
-    return u;
-  }, [uniforms, surfacePass]);
-
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: reflectUniforms,
-        vertexShader: exploreCityBuildingVert,
-        fragmentShader: exploreCityBuildingFrag,
-        transparent: true,
-        depthWrite: false,
-        depthTest: !surfacePass,
-        side: THREE.DoubleSide,
-        toneMapped: false,
-      }),
-    [reflectUniforms, surfacePass],
-  );
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, count]}
-      renderOrder={surfacePass ? 10 : 0}
-    />
-  );
 }
 
 const pylonVertexShader = /* glsl */ `
@@ -497,118 +449,6 @@ function ExploreAntennas({
   return <instancedMesh ref={meshRef} args={[geometry, material, count]} />;
 }
 
-function ExploreLightPools({
-  buildings,
-  uniforms,
-}: {
-  buildings: ExploreBuilding[];
-  uniforms: Record<string, THREE.IUniform>;
-}) {
-  const poolBuildings = useMemo(() => buildings.filter((b) => !b.isTier && b.yBase === 0), [buildings]);
-  const count = poolBuildings.length;
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-
-  const heights = useMemo(() => Float32Array.from(poolBuildings.map((b) => b.h)), [poolBuildings]);
-  const geometry = useMemo(() => {
-    const g = new THREE.PlaneGeometry(1, 1);
-    g.setAttribute('aHeight', new THREE.InstancedBufferAttribute(heights, 1));
-    return g;
-  }, [heights]);
-
-  const matrices = useMemo(() => {
-    const dummy = new THREE.Object3D();
-    return poolBuildings.map((b) => {
-      const poolSize = Math.max(b.w, b.d) * 1.15;
-      dummy.position.set(b.x, 0.018, b.z);
-      dummy.rotation.set(-Math.PI / 2, 0, 0);
-      dummy.scale.set(poolSize, poolSize, 1);
-      dummy.updateMatrix();
-      return dummy.matrix.clone();
-    });
-  }, [poolBuildings]);
-
-  useEffect(() => {
-    applyInstancedMatrices(meshRef.current, matrices);
-  }, [matrices]);
-
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms,
-        vertexShader: exploreCityPoolVert,
-        fragmentShader: exploreCityPoolFrag,
-        transparent: true,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-        toneMapped: false,
-      }),
-    [uniforms],
-  );
-
-  return (
-    <instancedMesh ref={meshRef} args={[geometry, material, count]} renderOrder={1} />
-  );
-}
-
-/** 霓虹灯牌地面镜像 — 透明招牌 FBO 反射不可靠，用几何翻转 */
-function ExploreNeonSignReflect({
-  signs,
-  renderInfo,
-  uniforms,
-  surfacePass = false,
-}: {
-  signs: ExploreNeonSign[];
-  renderInfo: NeonSignRenderInfo[];
-  uniforms: Record<string, THREE.IUniform>;
-  /** 砖面之上叠绘倒影（关闭深度测试，避免被不透明砖块挡住） */
-  surfacePass?: boolean;
-}) {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const count = signs.length;
-
-  const geometry = useMemo(() => buildSignGeometry(signs, renderInfo), [signs, renderInfo]);
-  const matrices = useMemo(() => buildSignMatrices(signs, true), [signs]);
-
-  useEffect(() => {
-    applyInstancedMatrices(meshRef.current, matrices);
-  }, [matrices]);
-
-  const reflectUniforms = useMemo(() => {
-    const u = { ...uniforms };
-    u.uReflect = { value: 1 };
-    u.uReflectGain = { value: mirrorLayer.signReflectGain };
-    u.uReflectBoost = { value: mirrorLayer.signReflectBoost };
-    u.uReflectSurfacePass = { value: surfacePass ? 1 : 0 };
-    Object.assign(u, mirrorUniforms);
-    return u;
-  }, [uniforms, surfacePass]);
-
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: reflectUniforms,
-        vertexShader: exploreNeonSignVert,
-        fragmentShader: exploreNeonSignFrag,
-        transparent: true,
-        depthWrite: false,
-        depthTest: !surfacePass,
-        side: THREE.DoubleSide,
-        toneMapped: false,
-      }),
-    [reflectUniforms, surfacePass],
-  );
-
-  if (count === 0) return null;
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, count]}
-      renderOrder={surfacePass ? 10 : 0}
-    />
-  );
-}
-
 function ExploreNeonSigns({
   signs,
   renderInfo,
@@ -664,12 +504,16 @@ function ExploreNeonSigns({
 function ExploreNormalSignGlow({
   signs,
   renderInfo,
+  opacityScale = 1,
 }: {
   signs: ExploreNeonSign[];
   renderInfo: NeonSignRenderInfo[];
+  opacityScale?: number;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
+  const opacityScaleRef = useRef(opacityScale);
   const count = signs.length;
+  opacityScaleRef.current = opacityScale;
   const geometry = useMemo(() => {
     const g = new THREE.PlaneGeometry(1, 1);
     const colors = new Float32Array(count * 3);
@@ -702,7 +546,9 @@ function ExploreNormalSignGlow({
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
-        uniforms: {},
+        uniforms: {
+          uOpacityScale: { value: 1 },
+        },
         vertexShader: /* glsl */ `
           attribute vec3 aColor;
           attribute float aStrength;
@@ -721,11 +567,12 @@ function ExploreNormalSignGlow({
           varying vec2 vUv;
           varying vec3 vColor;
           varying float vStrength;
+          uniform float uOpacityScale;
           void main() {
             vec2 p = vUv * 2.0 - 1.0;
             float r = dot(p, p);
             float glow = 1.0 - smoothstep(0.02, 1.0, r);
-            gl_FragColor = vec4(vColor * 0.72, glow * 0.18 * vStrength);
+            gl_FragColor = vec4(vColor * 0.72, glow * 0.18 * vStrength * uOpacityScale);
           }
         `,
         transparent: true,
@@ -736,6 +583,16 @@ function ExploreNormalSignGlow({
       }),
     [],
   );
+  useFrame((_, delta) => {
+    material.uniforms.uOpacityScale.value = THREE.MathUtils.lerp(
+      material.uniforms.uOpacityScale.value as number,
+      opacityScaleRef.current,
+      1 - Math.exp(-delta * 6),
+    );
+    if (meshRef.current) {
+      meshRef.current.visible = material.uniforms.uOpacityScale.value > 0.01;
+    }
+  });
 
   if (count === 0) return null;
 
@@ -768,11 +625,11 @@ function ExploreCyberCityTextured({
   showWorldLabels: boolean;
   posterAtlas: THREE.Texture | null;
 }) {
+  const flags = getWorldFeatureFlags();
+  const legacyNeonEnabled = !flags.useNewNeonSystem;
+
   const { camera } = useThree();
-  const debugDistortedReflection = useMemo(() => {
-    if (typeof window === 'undefined') return 0;
-    return new URLSearchParams(window.location.search).get('debugDistortedReflection') === '1' ? 1 : 0;
-  }, []);
+  const budget = useRenderBudget();
 
   const loadedBuildingTextures = useLoader(THREE.TextureLoader, getBuildingTextureUrls());
   const buildingTextureUniforms = useMemo(() => {
@@ -810,16 +667,6 @@ function ExploreCyberCityTextured({
     [],
   );
 
-  const poolUniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uColor: { value: new THREE.Color(EXPLORE_CITY_PALETTE.amber) },
-      uCamPos: { value: new THREE.Vector3() },
-      ...createDistanceLodUniforms(),
-    }),
-    [],
-  );
-
   const pylonUniforms = useMemo(
     () => ({
       uCamPos: { value: new THREE.Vector3() },
@@ -850,11 +697,19 @@ function ExploreCyberCityTextured({
       uRgbLayerDepth: { value: POSTER_GLITCH_BURST.rgbLayerDepth },
       uScanlineLift: { value: POSTER_GLITCH_BURST.scanlineLift },
       uBlockPeelStrength: { value: POSTER_GLITCH_BURST.blockPeelStrength },
-      uPosterAtlas: { value: posterAtlas ?? new THREE.Texture() },
+      uPosterAtlas: { value: posterAtlas },
       uAtlasCell: { value: atlasCell.clone() },
       uAtlasCols: { value: GLITCH_POSTER_COLS },
       uSignBloomBoost: { value: 0.22 },
       uSignOuterGlow: { value: 0.72 },
+      uPosterGlowThreshold: { value: 0.55 },
+      uPosterGlowSoftness: { value: 0.16 },
+      uPosterSaturationThreshold: { value: 0.22 },
+      uPosterEmissiveBoost: { value: 1.8 },
+      uPosterBaseBrightness: { value: 0.92 },
+      uPosterPulseStrength: { value: 0.08 },
+      uPosterScanlineStrength: { value: 0.035 },
+      uGlitchFullEnd: { value: EXPLORE_DISTANCE_LOD.glitchFullEnd },
     }),
     [posterAtlas, atlasCell],
   );
@@ -863,40 +718,30 @@ function ExploreCyberCityTextured({
     const t = clock.elapsedTime;
     buildingUniforms.uTime.value = t;
     antennaUniforms.uTime.value = t;
-    poolUniforms.uTime.value = t;
     signUniforms.uTime.value = t;
     (buildingUniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
     (antennaUniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
-    (poolUniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
     (pylonUniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
     (signUniforms.uCamPos.value as THREE.Vector3).copy(camera.position);
-
-    brickGridUniforms.uDebugDistortedReflection.value = debugDistortedReflection;
   });
+
+  useFrame(() => {
+    resetNearEmissiveCount();
+  }, -1);
 
   return (
     <group>
-      {useGeometricMirrors && (
-        <>
-          <ExploreBuildingReflect buildings={buildings} uniforms={buildingUniforms} />
-          {posterAtlas && (
-            <ExploreNeonSignReflect
-              signs={signBatches.hero.signs}
-              renderInfo={signBatches.hero.info}
-              uniforms={signUniforms}
-            />
-          )}
-        </>
-      )}
-      <FloorLightingAccents buildings={buildings} signs={signs} pylons={pylons} dualPylons={dualPylons} />
-      <ExploreLightPools buildings={buildings} uniforms={poolUniforms} />
       <ExploreBuildings buildings={buildings} uniforms={buildingUniforms} />
       <ExplorePylons pylons={pylons} uniforms={pylonUniforms} />
       <ExploreDualPylons dualPylons={dualPylons} uniforms={pylonUniforms} />
       <ExploreAntennas buildings={buildings} uniforms={antennaUniforms} />
-      {posterAtlas && (
+      {legacyNeonEnabled && posterAtlas && (
         <>
-          <ExploreNormalSignGlow signs={signBatches.normal.signs} renderInfo={signBatches.normal.info} />
+          <ExploreNormalSignGlow
+            signs={signBatches.normal.signs}
+            renderInfo={signBatches.normal.info}
+            opacityScale={budget.farGlowEnabled ? 1 : 0}
+          />
           <ExploreNeonSigns
             signs={signBatches.background.signs}
             renderInfo={signBatches.background.info}
@@ -918,17 +763,6 @@ function ExploreCyberCityTextured({
         </>
       )}
       {showWorldLabels && <ExploreWorldLabels buildings={buildings} signs={signs} />}
-      {posterAtlas && useGeometricMirrors && (
-        <>
-          <ExploreBuildingReflect buildings={buildings} uniforms={buildingUniforms} surfacePass />
-          <ExploreNeonSignReflect
-            signs={signBatches.hero.signs}
-            renderInfo={signBatches.hero.info}
-            uniforms={signUniforms}
-            surfacePass
-          />
-        </>
-      )}
     </group>
   );
 }
@@ -936,17 +770,24 @@ function ExploreCyberCityTextured({
 function ExploreCyberCityContent() {
   const { buildings, signs, pylons, dualPylons } = useMemo(() => generateExploreCity(), []);
   const showWorldLabels = useMemo(() => isWorldLabelsEnabled(), []);
+  const flags = useMemo(() => getWorldFeatureFlags(), []);
+  const needsLegacyPosterAtlas = !flags.useNewNeonSystem;
   const [posterAtlas, setPosterAtlas] = useState<THREE.Texture | null>(null);
 
   useEffect(() => {
+    if (!needsLegacyPosterAtlas) return;
     let alive = true;
     createHybridNeonPosterAtlas().then((tex) => {
-      if (alive) setPosterAtlas(tex);
+      if (alive) {
+        setPosterAtlas(tex);
+      } else {
+        tex.dispose();
+      }
     });
     return () => {
       alive = false;
     };
-  }, []);
+  }, [needsLegacyPosterAtlas]);
 
   return (
     <Suspense fallback={null}>

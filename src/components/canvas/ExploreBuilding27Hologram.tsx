@@ -7,7 +7,6 @@ export default function ExploreBuilding27Hologram() {
       texturePath={BUILDING27_EVA_HOLOGRAM.texturePath}
       placement={BUILDING27_EVA_HOLOGRAM.placement}
       burst={BUILDING27_EVA_HOLOGRAM.burst}
-      reflect={BUILDING27_EVA_HOLOGRAM.reflect}
       breathing={BUILDING27_EVA_HOLOGRAM.breathing}
     />
   );

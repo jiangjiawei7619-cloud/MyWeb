@@ -103,7 +103,7 @@ export const techNotes: TechNote[] = [
     tags: ['POSTPROCESS', 'GLSL', 'EFFECTS'],
     date: '2026-05-08',
     readTime: '9 min read',
-    cover: '/textures/gipsy-danger-poster.png',
+    cover: '/textures/neon-posters/poster_00.png',
   },
   {
     id: 'vector-search-notes',

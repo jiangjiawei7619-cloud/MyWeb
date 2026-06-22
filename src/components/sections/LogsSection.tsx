@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useMemo, useState, type ReactNode } from 'react';
 import BlogCategoryTabs, { type BlogCategory } from '@/components/blogs/BlogCategoryTabs';
 import DailyTimeline from '@/components/blogs/DailyTimeline';
 import FeaturedTechNote from '@/components/blogs/FeaturedTechNote';
@@ -12,16 +11,30 @@ import {
   techNotes,
   type HeatmapDay,
 } from '@/data/blogs';
-import { playClick } from '@/utils/audio';
+import { playClick, playJumpSound } from '@/utils/audio';
 
 function sumCounts(days: HeatmapDay[]): number {
   return days.reduce((total, day) => total + day.count, 0);
 }
 
+function BlogReveal({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      {children}
+    </div>
+  );
+}
+
 export default function LogsSection() {
   const featuredNote = useMemo(() => techNotes.find((note) => note.featured) ?? techNotes[0], []);
   const accordionNotes = useMemo(() => techNotes.filter((note) => note.id !== featuredNote?.id), [featuredNote]);
-  const [selectedCategory, setSelectedCategory] = useState<BlogCategory>('all');
+  const [selectedCategory, setSelectedCategory] = useState<BlogCategory>('tech');
   const [expandedFeatured, setExpandedFeatured] = useState(true);
   const [expandedTechNoteIds, setExpandedTechNoteIds] = useState<string[]>(() =>
     accordionNotes[0] ? [accordionNotes[0].id] : [],
@@ -32,7 +45,8 @@ export default function LogsSection() {
   const githubTotal = useMemo(() => sumCounts(githubHeatmap), []);
 
   const handleSelectCategory = (category: BlogCategory) => {
-    playClick(880, 0.025);
+    if (category === selectedCategory) return;
+    playJumpSound();
     setSelectedCategory(category);
   };
 
@@ -55,11 +69,11 @@ export default function LogsSection() {
     );
   };
 
-  const showFeatured = selectedCategory === 'all' || selectedCategory === 'tech';
-  const showLeetcode = selectedCategory === 'all' || selectedCategory === 'leetcode';
-  const showGithub = selectedCategory === 'all' || selectedCategory === 'github';
-  const showDaily = selectedCategory === 'all' || selectedCategory === 'daily';
-  const showTechList = selectedCategory === 'all' || selectedCategory === 'tech';
+  const showFeatured = selectedCategory === 'tech';
+  const showLeetcode = selectedCategory === 'leetcode';
+  const showGithub = selectedCategory === 'github';
+  const showDaily = selectedCategory === 'daily';
+  const showTechList = selectedCategory === 'tech';
 
   return (
     <section className="blogs-hub w-full select-none">
@@ -67,26 +81,17 @@ export default function LogsSection() {
 
       <BlogCategoryTabs selectedCategory={selectedCategory} onSelect={handleSelectCategory} />
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={selectedCategory}
-          className="space-y-4 md:space-y-5"
-          initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -8, filter: 'blur(4px)' }}
-          transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {showFeatured && featuredNote && (
+      <div className="space-y-4 md:space-y-5">
+        {showFeatured && featuredNote && (
+          <BlogReveal key={`featured-${selectedCategory}`}>
             <FeaturedTechNote note={featuredNote} expanded={expandedFeatured} onToggle={toggleFeatured} />
-          )}
+          </BlogReveal>
+        )}
 
-          {(showLeetcode || showGithub) && (
-            <div
-              className={`grid gap-4 md:gap-5 ${
-                selectedCategory === 'all' ? 'xl:grid-cols-2' : 'grid-cols-1'
-              }`}
-            >
-              {showLeetcode && (
+        {(showLeetcode || showGithub) && (
+          <div className="grid grid-cols-1 gap-4 md:gap-5">
+            {showLeetcode && (
+              <BlogReveal key="leetcode">
                 <HeatmapPanel
                   title="LeetCode Activity Matrix"
                   subtitle="custom calendar feed / mock protocol"
@@ -94,8 +99,10 @@ export default function LogsSection() {
                   data={leetcodeHeatmap}
                   variant="leetcode"
                 />
-              )}
-              {showGithub && (
+              </BlogReveal>
+            )}
+            {showGithub && (
+              <BlogReveal key="github">
                 <HeatmapPanel
                   title="GitHub Contribution Matrix"
                   subtitle="repo signal feed / mock protocol"
@@ -103,35 +110,35 @@ export default function LogsSection() {
                   data={githubHeatmap}
                   variant="github"
                 />
-              )}
-            </div>
-          )}
+              </BlogReveal>
+            )}
+          </div>
+        )}
 
-          {(showDaily || showTechList) && (
-            <div
-              className={`grid gap-4 md:gap-5 ${
-                selectedCategory === 'all' ? 'xl:grid-cols-[0.92fr_1.58fr]' : 'grid-cols-1'
-              }`}
-            >
-              {showDaily && (
+        {(showDaily || showTechList) && (
+          <div className="grid grid-cols-1 gap-4 md:gap-5">
+            {showDaily && (
+              <BlogReveal key="daily">
                 <DailyTimeline
                   logs={dailyLogs}
                   expandedDailyLogIds={expandedDailyLogIds}
                   onToggleLog={toggleDailyLog}
                 />
-              )}
+              </BlogReveal>
+            )}
 
-              {showTechList && (
+            {showTechList && (
+              <BlogReveal key="tech-list">
                 <TechNoteAccordion
                   notes={accordionNotes}
                   expandedTechNoteIds={expandedTechNoteIds}
                   onToggleNote={toggleTechNote}
                 />
-              )}
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+              </BlogReveal>
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

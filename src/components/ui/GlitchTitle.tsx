@@ -31,6 +31,33 @@ interface CharState {
 const DEFAULT_JAPANESE_TONE = 'text-[#ffe8e4]/88 scale-y-[1.02]';
 const DEFAULT_GLITCH_TONE = 'text-[#ff5357] scale-y-110 skew-x-3';
 const DEFAULT_GLITCH_TONE_READING = 'text-[#ff5357] scale-y-[1.04] skew-x-1';
+const JAPANESE_PINK_TONES = ['#ffe8e4', '#ffd0cb', '#ffb3af', '#ff8d92'];
+const JAPANESE_CYAN_TONES = ['#d9ffff', '#9cf8ff', '#67edf5', '#c6fbff'];
+
+function seededToneUnit(seed: number) {
+  let hash = Math.imul(seed ^ 0x9e3779b9, 1664525) + 1013904223;
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 2246822507);
+  hash ^= hash >>> 13;
+  return (hash >>> 0) / 4294967295;
+}
+
+function getJapaneseToneStyle(index: number, cycleId: number) {
+  const mix = seededToneUnit((cycleId + 1) * 4099 + index * 9176);
+  const shade = seededToneUnit((cycleId + 3) * 2657 + index * 6151);
+  const cyanTone = mix > 0.5;
+  const tones = cyanTone ? JAPANESE_CYAN_TONES : JAPANESE_PINK_TONES;
+  const color = tones[Math.floor(shade * tones.length) % tones.length];
+  const glowColor = cyanTone
+    ? 'rgba(0,238,252,0.18)'
+    : index % 2 === 0
+      ? 'rgba(255,83,87,0.2)'
+      : 'rgba(255,179,175,0.16)';
+  return {
+    color,
+    textShadow: `0 0 ${cyanTone ? 5 : 6}px ${glowColor}`,
+  };
+}
 
 export default function GlitchTitle({
   english,
@@ -265,6 +292,7 @@ export default function GlitchTitle({
     >
       {charStates.map((state, index) => {
         const slotEm = state.char === ' ' ? spaceSlotEm : charSlotEm;
+        const toneStyle = state.tone === 'japanese' ? getJapaneseToneStyle(index, cycleIdRef.current) : undefined;
         return (
         <span
           key={index}
@@ -277,7 +305,7 @@ export default function GlitchTitle({
                   : glitchToneClass
                 : ''
           }`}
-          style={{ width: `${slotEm}em` }}
+          style={{ width: `${slotEm}em`, ...toneStyle }}
         >
           {state.char === ' ' ? '\u00A0' : state.char}
         </span>

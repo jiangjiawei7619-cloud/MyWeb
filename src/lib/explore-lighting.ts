@@ -141,9 +141,9 @@ export const EXPLORE_GLOBAL_LIGHT = {
 /** EXPLORE 漫射 / 泛光 — 霓虹在空气与立面上的自然晕开 */
 export const EXPLORE_DIFFUSE = {
   bloom: {
-    intensity: 0.58,
-    luminanceThreshold: 0.38,
-    luminanceSmoothing: 0.34,
+    intensity: 0.45,
+    luminanceThreshold: 1.0,
+    luminanceSmoothing: 0.18,
     radius: 0.58,
   },
   vignette: {

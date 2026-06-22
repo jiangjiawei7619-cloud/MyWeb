@@ -4,7 +4,6 @@ import {
   AIR_ACCEL,
   AIR_JUMP_VELOCITY,
   CAMERA_BASE_FOV,
-  CAMERA_DOLLY_PUSH_SCALE,
   CAMERA_FX_SMOOTH,
   CAMERA_PITCH_STRETCH_MAX,
   CAMERA_PITCH_STRETCH_THRESHOLD,
@@ -30,6 +29,9 @@ import {
   MOVE_SPEED,
   PITCH_MAX,
   PITCH_MIN,
+  THIRD_PERSON_DISTANCE,
+  THIRD_PERSON_PITCH_BIAS,
+  THIRD_PERSON_PIVOT_Y,
 } from '@/physics/rapier-config';
 import type { PhysicsWorldBundle } from '@/physics/createPhysicsWorld';
 import { playCyberDoubleJumpSound, playCyberJumpSound } from '@/utils/audio';
@@ -84,6 +86,12 @@ export class FirstPersonController {
   private bodyPosInitialized = false;
   private smoothBodyY = 0;
   private readonly horizontalVel = new THREE.Vector3();
+  private readonly interpBodyPos = new THREE.Vector3();
+  private readonly cameraPivotPos = new THREE.Vector3();
+  private prevGroundedForAvatar = false;
+  private avatarLandPulse = false;
+  private avatarJumpPulse = false;
+  private avatarDoubleJumpPulse = false;
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
     if (!this.inputEnabled) return;
@@ -173,24 +181,55 @@ export class FirstPersonController {
     this.pitchVel = 0;
   }
 
+  /** 玩家是否已有可恢复的 EXPLORE 视角（intro 交接或至少一帧物理步进后） */
+  isExploreStateReady(): boolean {
+    return this.bodyPosInitialized;
+  }
+
+  /** 上次 EXPLORE 第三人称相机位与朝向 — 用于分区切回时的镜头过渡 */
+  getExploreViewState(outCamera: THREE.Vector3): { yaw: number; pitch: number } {
+    this.getInterpolatedBodyPosition(outCamera, 1);
+    const cameraPitch = this.pitch + THIRD_PERSON_PITCH_BIAS;
+    this.writeThirdPersonCameraPosition(outCamera, this.yaw, cameraPitch);
+    return { yaw: this.yaw, pitch: cameraPitch };
+  }
+
+  /** 第三人称相机世界坐标（pivot 沿视线反向后退） */
+  private writeThirdPersonCameraPosition(out: THREE.Vector3, yaw: number, pitch: number) {
+    this.viewForward.set(
+      -Math.sin(yaw) * Math.cos(pitch),
+      Math.sin(pitch),
+      -Math.cos(yaw) * Math.cos(pitch),
+    );
+    out.y += THIRD_PERSON_PIVOT_Y;
+    out.addScaledVector(this.viewForward, -THIRD_PERSON_DISTANCE);
+  }
+
   /** 与 intro 镜头交接：对齐 yaw/pitch 并预热相机/物理插值状态，避免首帧跳变 */
-  commitIntroHandoff(yaw: number, pitch: number) {
+  commitIntroHandoff(yaw: number, playerPitch: number) {
     const t = this.playerBody.translation();
     this.yaw = yaw;
-    this.pitch = pitch;
+    this.pitch = playerPitch;
     this.yawVel = 0;
     this.pitchVel = 0;
     this.prevBodyPos.set(t.x, t.y, t.z);
     this.currBodyPos.copy(this.prevBodyPos);
     this.smoothBodyY = t.y;
     this.bodyPosInitialized = true;
-    this.baseCameraPos.set(t.x, t.y + EYE_OFFSET_Y, t.z);
+    this.interpBodyPos.set(t.x, t.y, t.z);
+    this.cameraPivotPos.copy(this.interpBodyPos).setY(t.y + THIRD_PERSON_PIVOT_Y);
+    this.baseCameraPos.copy(this.cameraPivotPos);
     this.fxBlend = 0;
     this.smoothPitchStretch = 0;
     this.smoothFovBoost = 0;
     this.smoothPush = 0;
     this.smoothBobY = 0;
     this.bobPhase = 0;
+  }
+
+  /** 过渡终点交接：传入已含 THIRD_PERSON_PITCH_BIAS 的相机 pitch */
+  commitExploreCameraHandoff(yaw: number, cameraPitch: number) {
+    this.commitIntroHandoff(yaw, cameraPitch - THIRD_PERSON_PITCH_BIAS);
   }
 
   private attachInputListeners() {
@@ -294,6 +333,11 @@ export class FirstPersonController {
 
     this.grounded = this.isGrounded();
 
+    if (this.grounded && !this.prevGroundedForAvatar) {
+      this.avatarLandPulse = true;
+    }
+    this.prevGroundedForAvatar = this.grounded;
+
     if (this.grounded) {
       this.jumpsRemaining = MAX_JUMPS;
     }
@@ -321,19 +365,22 @@ export class FirstPersonController {
   syncCamera(camera: THREE.PerspectiveCamera, delta: number, physicsAlpha = 1) {
     if (!this.bodyPosInitialized) {
       const t = this.playerBody.translation();
-      this.baseCameraPos.set(t.x, t.y + EYE_OFFSET_Y, t.z);
+      this.interpBodyPos.set(t.x, t.y, t.z);
     } else {
       const alpha = THREE.MathUtils.clamp(physicsAlpha, 0, 1);
       const interpY = THREE.MathUtils.lerp(this.prevBodyPos.y, this.currBodyPos.y, alpha);
       const bodyYSmoothT = 1 - Math.exp(-18 * delta);
       this.smoothBodyY = THREE.MathUtils.lerp(this.smoothBodyY, interpY, bodyYSmoothT);
 
-      this.baseCameraPos.set(
+      this.interpBodyPos.set(
         THREE.MathUtils.lerp(this.prevBodyPos.x, this.currBodyPos.x, alpha),
-        this.smoothBodyY + EYE_OFFSET_Y,
+        this.smoothBodyY,
         THREE.MathUtils.lerp(this.prevBodyPos.z, this.currBodyPos.z, alpha),
       );
     }
+
+    this.cameraPivotPos.copy(this.interpBodyPos).setY(this.interpBodyPos.y + THIRD_PERSON_PIVOT_Y);
+    this.baseCameraPos.copy(this.cameraPivotPos);
 
     this.updateLook(delta);
 
@@ -343,7 +390,6 @@ export class FirstPersonController {
     const pitchSmoothT = 1 - Math.exp(-CAMERA_STRETCH_PITCH_SMOOTH * delta);
     this.smoothPitchStretch = THREE.MathUtils.lerp(this.smoothPitchStretch, pitchTarget, pitchSmoothT);
 
-    // 行走 OR 仰视超过水平：任一满足即触发 Samsy 式拉伸（互不依赖）
     const stretchWeight = Math.max(moveBlend, this.smoothPitchStretch);
     const easedBlend = stretchWeight * stretchWeight * (3 - 2 * stretchWeight);
     const stretchBlend = Math.pow(easedBlend, CAMERA_STRETCH_CONTRAST);
@@ -357,7 +403,7 @@ export class FirstPersonController {
     const targetTan = Math.tan(
       THREE.MathUtils.degToRad((CAMERA_BASE_FOV + targetFovBoost) * 0.5),
     );
-    const targetPush = (1 - baseTan / targetTan) * CAMERA_DOLLY_PUSH_SCALE;
+    const targetPush = (1 - baseTan / targetTan) * THIRD_PERSON_DISTANCE;
 
     this.smoothFovBoost = THREE.MathUtils.lerp(this.smoothFovBoost, targetFovBoost, smoothT);
     this.smoothPush = THREE.MathUtils.lerp(this.smoothPush, targetPush, smoothT);
@@ -365,18 +411,22 @@ export class FirstPersonController {
     this.smoothBobY = THREE.MathUtils.lerp(this.smoothBobY, 0, smoothT);
     this.bobPhase = THREE.MathUtils.lerp(this.bobPhase, 0, smoothT);
 
+    const cameraPitch = this.pitch + THIRD_PERSON_PITCH_BIAS;
     this.viewForward.set(
-      -Math.sin(this.yaw) * Math.cos(this.pitch),
-      Math.sin(this.pitch),
-      -Math.cos(this.yaw) * Math.cos(this.pitch),
+      -Math.sin(this.yaw) * Math.cos(cameraPitch),
+      Math.sin(cameraPitch),
+      -Math.cos(this.yaw) * Math.cos(cameraPitch),
     );
 
-    camera.position.copy(this.baseCameraPos).addScaledVector(this.viewForward, this.smoothPush);
+    // pivot 沿完整视线方向（含俯仰）后退；dolly 同轴前移，低头/抬头时角色保持瞄在 pivot
+    camera.position
+      .copy(this.cameraPivotPos)
+      .addScaledVector(this.viewForward, this.smoothPush - THIRD_PERSON_DISTANCE);
     camera.position.y += this.smoothBobY;
 
     camera.rotation.order = 'YXZ';
     camera.rotation.y = this.yaw;
-    camera.rotation.x = this.pitch;
+    camera.rotation.x = cameraPitch;
     camera.rotation.z = 0;
 
     const fov = CAMERA_BASE_FOV + this.smoothFovBoost;
@@ -384,7 +434,11 @@ export class FirstPersonController {
       camera.fov = fov;
       camera.updateProjectionMatrix();
     }
+  }
 
+  /** 行走/仰视镜头拉伸混合权（0–1），供角色视觉拉伸同步 */
+  getCameraFxBlend(): number {
+    return this.fxBlend;
   }
 
   /**
@@ -430,6 +484,106 @@ export class FirstPersonController {
 
   isLookDragging() {
     return this.lookDragging;
+  }
+
+  /** 与相机 syncCamera 一致的显示位置（含 smoothBodyY），避免角色卡顿/抖动 */
+  getDisplayBodyPosition(out: THREE.Vector3, physicsAlpha = 1) {
+    if (!this.bodyPosInitialized) {
+      const t = this.playerBody.translation();
+      out.set(t.x, t.y, t.z);
+      return out;
+    }
+    const alpha = THREE.MathUtils.clamp(physicsAlpha, 0, 1);
+    out.set(
+      THREE.MathUtils.lerp(this.prevBodyPos.x, this.currBodyPos.x, alpha),
+      this.smoothBodyY,
+      THREE.MathUtils.lerp(this.prevBodyPos.z, this.currBodyPos.z, alpha),
+    );
+    return out;
+  }
+
+  /** 插值后的刚体中心位置，供可视角色层跟随 */
+  getInterpolatedBodyPosition(out: THREE.Vector3, physicsAlpha = 1) {
+    if (!this.bodyPosInitialized) {
+      const t = this.playerBody.translation();
+      out.set(t.x, t.y, t.z);
+      return out;
+    }
+    const alpha = THREE.MathUtils.clamp(physicsAlpha, 0, 1);
+    out.set(
+      THREE.MathUtils.lerp(this.prevBodyPos.x, this.currBodyPos.x, alpha),
+      THREE.MathUtils.lerp(this.prevBodyPos.y, this.currBodyPos.y, alpha),
+      THREE.MathUtils.lerp(this.prevBodyPos.z, this.currBodyPos.z, alpha),
+    );
+    return out;
+  }
+
+  hasMoveInput(): boolean {
+    if (!this.inputEnabled) return false;
+    return (
+      this.keys.has('KeyW') ||
+      this.keys.has('KeyA') ||
+      this.keys.has('KeyS') ||
+      this.keys.has('KeyD')
+    );
+  }
+
+  isPlayerGrounded(): boolean {
+    return this.grounded;
+  }
+
+  getVerticalVelocity(): number {
+    return this.playerBody.linvel().y;
+  }
+
+  getHorizontalVelocity(out: THREE.Vector3) {
+    const v = this.playerBody.linvel();
+    return out.set(v.x, 0, v.z);
+  }
+
+  getHorizontalSpeed(): number {
+    this.getHorizontalVelocity(this.horizontalVel);
+    return this.horizontalVel.length();
+  }
+
+  /** WASD 输入对应的水平移动方向（归一化），无输入时返回 false */
+  getWishDirectionHorizontal(out: THREE.Vector3): boolean {
+    if (!this.hasMoveInput()) return false;
+
+    let inputX = 0;
+    let inputZ = 0;
+    if (this.keys.has('KeyW')) inputZ += 1;
+    if (this.keys.has('KeyS')) inputZ -= 1;
+    if (this.keys.has('KeyA')) inputX -= 1;
+    if (this.keys.has('KeyD')) inputX += 1;
+
+    const inputLen = Math.hypot(inputX, inputZ);
+    if (inputLen === 0) return false;
+
+    inputX /= inputLen;
+    inputZ /= inputLen;
+
+    this.forward.set(-Math.sin(this.yaw), 0, -Math.cos(this.yaw));
+    this.right.crossVectors(this.forward, this.up).normalize();
+    return out
+      .copy(this.forward)
+      .multiplyScalar(inputZ)
+      .addScaledVector(this.right, inputX)
+      .normalize()
+      .lengthSq() > 0;
+  }
+
+  /** 读取并清零单帧视觉脉冲（起跳 / 二段跳 / 落地） */
+  consumeAvatarPulses() {
+    const pulses = {
+      jump: this.avatarJumpPulse,
+      doubleJump: this.avatarDoubleJumpPulse,
+      land: this.avatarLandPulse,
+    };
+    this.avatarJumpPulse = false;
+    this.avatarDoubleJumpPulse = false;
+    this.avatarLandPulse = false;
+    return pulses;
   }
 
   private applyMovement() {
@@ -496,8 +650,10 @@ export class FirstPersonController {
     this.jumpsRemaining -= 1;
 
     if (isFirstJump) {
+      this.avatarJumpPulse = true;
       playCyberJumpSound();
     } else {
+      this.avatarDoubleJumpPulse = true;
       playCyberDoubleJumpSound();
     }
   }

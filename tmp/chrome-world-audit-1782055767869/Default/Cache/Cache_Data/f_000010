@@ -1,0 +1,225 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/@fs/C:\\Users\\PC1\\Desktop\\Myweb\\src\\components\\ui\\ExploreKeyHints.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=c1bd64ec"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+var _s = $RefreshSig$();
+import __vite__cjsImport1_react from "/node_modules/.vite/deps/react.js?v=c1bd64ec"; const useEffect = __vite__cjsImport1_react["useEffect"]; const useState = __vite__cjsImport1_react["useState"];
+import { AnimatePresence } from "/node_modules/.vite/deps/motion_react.js?v=c1bd64ec";
+const BOOT_DELAY_MS = 420;
+function KeyLetter({ letter }) {
+  return /* @__PURE__ */ jsxDEV("span", { className: "text-[10px] leading-none", children: letter }, void 0, false, {
+    fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+    lineNumber: 12,
+    columnNumber: 10
+  }, this);
+}
+_c = KeyLetter;
+function KeyCap({
+  children,
+  wide,
+  boot,
+  delayMs = 0
+}) {
+  return /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      className: "explore-key-cap flex items-center justify-center rounded-md bg-[#ff5357] font-bold text-black shadow-[0_0_10px_rgba(255,83,87,0.45)] " + (wide ? "h-7 min-w-[4rem] px-2.5 text-[9px] tracking-[0.2em] " : "h-7 w-7 ") + (boot ? "explore-key-cap--boot" : ""),
+      style: boot ? { animationDelay: `${delayMs}ms` } : void 0,
+      children
+    },
+    void 0,
+    false,
+    {
+      fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+      lineNumber: 27,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c2 = KeyCap;
+function HintLabel({
+  children,
+  boot,
+  delayMs = 0,
+  className = ""
+}) {
+  return /* @__PURE__ */ jsxDEV(
+    "span",
+    {
+      className: "explore-key-label font-mono text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#ff5357] leading-none " + (boot ? "explore-key-label--boot" : "") + (className ? ` ${className}` : ""),
+      style: boot ? { animationDelay: `${delayMs}ms` } : void 0,
+      children
+    },
+    void 0,
+    false,
+    {
+      fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+      lineNumber: 53,
+      columnNumber: 5
+    },
+    this
+  );
+}
+_c3 = HintLabel;
+export default function ExploreKeyHints({ visible }) {
+  _s();
+  const [boot, setBoot] = useState(false);
+  useEffect(() => {
+    if (!visible) {
+      setBoot(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setBoot(true), BOOT_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [visible]);
+  return /* @__PURE__ */ jsxDEV(AnimatePresence, { children: visible && /* @__PURE__ */ jsxDEV(
+    "div",
+    {
+      className: "pointer-events-none select-none hidden lg:flex flex-col items-end md:absolute md:right-10 md:top-[4.35rem] z-[58]",
+      "aria-hidden": true,
+      children: /* @__PURE__ */ jsxDEV("div", { className: "flex items-start gap-2.5", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col items-center gap-1", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-3 gap-0.5", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "h-7 w-7" }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 93,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(KeyCap, { boot, delayMs: 0, children: /* @__PURE__ */ jsxDEV(KeyLetter, { letter: "W" }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 95,
+              columnNumber: 19
+            }, this) }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 94,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "h-7 w-7" }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 97,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(KeyCap, { boot, delayMs: 70, children: /* @__PURE__ */ jsxDEV(KeyLetter, { letter: "A" }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 99,
+              columnNumber: 19
+            }, this) }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 98,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(KeyCap, { boot, delayMs: 130, children: /* @__PURE__ */ jsxDEV(KeyLetter, { letter: "S" }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 102,
+              columnNumber: 19
+            }, this) }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 101,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(KeyCap, { boot, delayMs: 190, children: /* @__PURE__ */ jsxDEV(KeyLetter, { letter: "D" }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 105,
+              columnNumber: 19
+            }, this) }, void 0, false, {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 104,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+            lineNumber: 92,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "div",
+            {
+              className: "explore-key-hints-connector w-px h-[0.5rem] border-l border-dashed border-[#ff5357]/45 " + (boot ? "explore-key-hints-connector--boot" : ""),
+              style: boot ? { animationDelay: "260ms" } : void 0,
+              "aria-hidden": true
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+              lineNumber: 109,
+              columnNumber: 15
+            },
+            this
+          ),
+          /* @__PURE__ */ jsxDEV(KeyCap, { boot, delayMs: 320, wide: true, children: "SPACE" }, void 0, false, {
+            fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+            lineNumber: 118,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+          lineNumber: 91,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex flex-col justify-between h-[5.85rem] py-0.5", children: [
+          /* @__PURE__ */ jsxDEV(HintLabel, { boot, delayMs: 90, className: "pt-1.5", children: "CONTROL" }, void 0, false, {
+            fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+            lineNumber: 124,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV(HintLabel, { boot, delayMs: 380, className: "pb-0.5", children: "JUMP" }, void 0, false, {
+            fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+            lineNumber: 127,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+          lineNumber: 123,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+        lineNumber: 90,
+        columnNumber: 11
+      }, this)
+    },
+    "explore-key-hints",
+    false,
+    {
+      fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+      lineNumber: 82,
+      columnNumber: 7
+    },
+    this
+  ) }, void 0, false, {
+    fileName: "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx",
+    lineNumber: 80,
+    columnNumber: 5
+  }, this);
+}
+_s(ExploreKeyHints, "rGR8jGOH8R4fzBd682WMWxN/bb4=");
+_c4 = ExploreKeyHints;
+var _c, _c2, _c3, _c4;
+$RefreshReg$(_c, "KeyLetter");
+$RefreshReg$(_c2, "KeyCap");
+$RefreshReg$(_c3, "HintLabel");
+$RefreshReg$(_c4, "ExploreKeyHints");
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+function $RefreshReg$(type, id) {
+  return RefreshRuntime.register(type, "C:/Users/PC1/Desktop/Myweb/src/components/ui/ExploreKeyHints.tsx " + id);
+}
+function $RefreshSig$() {
+  return RefreshRuntime.createSignatureFunctionForTransform();
+}
+
+//# sourceMappingURL=data:application/json;base64,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ZUVmZmVjdCIsInVzZVN0YXRlIiwiQW5pbWF0ZVByZXNlbmNlIiwiQk9PVF9ERUxBWV9NUyIsIktleUxldHRlciIsImxldHRlciIsIl9jIiwiS2V5Q2FwIiwiY2hpbGRyZW4iLCJ3aWRlIiwiYm9vdCIsImRlbGF5TXMiLCJhbmltYXRpb25EZWxheSIsInVuZGVmaW5lZCIsIl9jMiIsIkhpbnRMYWJlbCIsImNsYXNzTmFtZSIsIl9jMyIsIkV4cGxvcmVLZXlIaW50cyIsInZpc2libGUiLCJfcyIsInNldEJvb3QiLCJ0aW1lciIsIndpbmRvdyIsInNldFRpbWVvdXQiLCJjbGVhclRpbWVvdXQiLCJfYzQiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiRXhwbG9yZUtleUhpbnRzLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyB1c2VFZmZlY3QsIHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgQW5pbWF0ZVByZXNlbmNlIH0gZnJvbSAnbW90aW9uL3JlYWN0JztcblxuaW50ZXJmYWNlIEV4cGxvcmVLZXlIaW50c1Byb3BzIHtcbiAgdmlzaWJsZTogYm9vbGVhbjtcbn1cblxuLyoqIOi/m+WFpSBFWFBMT1JFIOWQjueojeaZmuWGjeaSreaMiemUrumXquWKqCAqL1xuY29uc3QgQk9PVF9ERUxBWV9NUyA9IDQyMDtcblxuZnVuY3Rpb24gS2V5TGV0dGVyKHsgbGV0dGVyIH06IHsgbGV0dGVyOiBzdHJpbmcgfSkge1xuICByZXR1cm4gPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1bMTBweF0gbGVhZGluZy1ub25lXCI+e2xldHRlcn08L3NwYW4+O1xufVxuXG5mdW5jdGlvbiBLZXlDYXAoe1xuICBjaGlsZHJlbixcbiAgd2lkZSxcbiAgYm9vdCxcbiAgZGVsYXlNcyA9IDAsXG59OiB7XG4gIGNoaWxkcmVuOiBSZWFjdC5SZWFjdE5vZGU7XG4gIHdpZGU/OiBib29sZWFuO1xuICBib290OiBib29sZWFuO1xuICBkZWxheU1zPzogbnVtYmVyO1xufSkge1xuICByZXR1cm4gKFxuICAgIDxkaXZcbiAgICAgIGNsYXNzTmFtZT17XG4gICAgICAgICdleHBsb3JlLWtleS1jYXAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcm91bmRlZC1tZCBiZy1bI2ZmNTM1N10gZm9udC1ib2xkIHRleHQtYmxhY2sgJyArXG4gICAgICAgICdzaGFkb3ctWzBfMF8xMHB4X3JnYmEoMjU1LDgzLDg3LDAuNDUpXSAnICtcbiAgICAgICAgKHdpZGUgPyAnaC03IG1pbi13LVs0cmVtXSBweC0yLjUgdGV4dC1bOXB4XSB0cmFja2luZy1bMC4yZW1dICcgOiAnaC03IHctNyAnKSArXG4gICAgICAgIChib290ID8gJ2V4cGxvcmUta2V5LWNhcC0tYm9vdCcgOiAnJylcbiAgICAgIH1cbiAgICAgIHN0eWxlPXtib290ID8geyBhbmltYXRpb25EZWxheTogYCR7ZGVsYXlNc31tc2AgfSA6IHVuZGVmaW5lZH1cbiAgICA+XG4gICAgICB7Y2hpbGRyZW59XG4gICAgPC9kaXY+XG4gICk7XG59XG5cbmZ1bmN0aW9uIEhpbnRMYWJlbCh7XG4gIGNoaWxkcmVuLFxuICBib290LFxuICBkZWxheU1zID0gMCxcbiAgY2xhc3NOYW1lID0gJycsXG59OiB7XG4gIGNoaWxkcmVuOiBSZWFjdC5SZWFjdE5vZGU7XG4gIGJvb3Q6IGJvb2xlYW47XG4gIGRlbGF5TXM/OiBudW1iZXI7XG4gIGNsYXNzTmFtZT86IHN0cmluZztcbn0pIHtcbiAgcmV0dXJuIChcbiAgICA8c3BhblxuICAgICAgY2xhc3NOYW1lPXtcbiAgICAgICAgJ2V4cGxvcmUta2V5LWxhYmVsIGZvbnQtbW9ubyB0ZXh0LVsxMHB4XSBmb250LWV4dHJhYm9sZCB1cHBlcmNhc2UgdHJhY2tpbmctWzAuMTZlbV0gdGV4dC1bI2ZmNTM1N10gbGVhZGluZy1ub25lICcgK1xuICAgICAgICAoYm9vdCA/ICdleHBsb3JlLWtleS1sYWJlbC0tYm9vdCcgOiAnJykgK1xuICAgICAgICAoY2xhc3NOYW1lID8gYCAke2NsYXNzTmFtZX1gIDogJycpXG4gICAgICB9XG4gICAgICBzdHlsZT17Ym9vdCA/IHsgYW5pbWF0aW9uRGVsYXk6IGAke2RlbGF5TXN9bXNgIH0gOiB1bmRlZmluZWR9XG4gICAgPlxuICAgICAge2NoaWxkcmVufVxuICAgIDwvc3Bhbj5cbiAgKTtcbn1cblxuZXhwb3J0IGRlZmF1bHQgZnVuY3Rpb24gRXhwbG9yZUtleUhpbnRzKHsgdmlzaWJsZSB9OiBFeHBsb3JlS2V5SGludHNQcm9wcykge1xuICBjb25zdCBbYm9vdCwgc2V0Qm9vdF0gPSB1c2VTdGF0ZShmYWxzZSk7XG5cbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBpZiAoIXZpc2libGUpIHtcbiAgICAgIHNldEJvb3QoZmFsc2UpO1xuICAgICAgcmV0dXJuO1xuICAgIH1cblxuICAgIGNvbnN0IHRpbWVyID0gd2luZG93LnNldFRpbWVvdXQoKCkgPT4gc2V0Qm9vdCh0cnVlKSwgQk9PVF9ERUxBWV9NUyk7XG4gICAgcmV0dXJuICgpID0+IHdpbmRvdy5jbGVhclRpbWVvdXQodGltZXIpO1xuICB9LCBbdmlzaWJsZV0pO1xuXG4gIHJldHVybiAoXG4gICAgPEFuaW1hdGVQcmVzZW5jZT5cbiAgICAgIHt2aXNpYmxlICYmIChcbiAgICAgICAgPGRpdlxuICAgICAgICAgIGtleT1cImV4cGxvcmUta2V5LWhpbnRzXCJcbiAgICAgICAgICBjbGFzc05hbWU9e1xuICAgICAgICAgICAgJ3BvaW50ZXItZXZlbnRzLW5vbmUgc2VsZWN0LW5vbmUgaGlkZGVuIGxnOmZsZXggZmxleC1jb2wgaXRlbXMtZW5kICcgK1xuICAgICAgICAgICAgJ21kOmFic29sdXRlIG1kOnJpZ2h0LTEwIG1kOnRvcC1bNC4zNXJlbV0gei1bNThdJ1xuICAgICAgICAgIH1cbiAgICAgICAgICBhcmlhLWhpZGRlblxuICAgICAgICA+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLXN0YXJ0IGdhcC0yLjVcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBmbGV4LWNvbCBpdGVtcy1jZW50ZXIgZ2FwLTFcIj5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJncmlkIGdyaWQtY29scy0zIGdhcC0wLjVcIj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImgtNyB3LTdcIiAvPlxuICAgICAgICAgICAgICAgIDxLZXlDYXAgYm9vdD17Ym9vdH0gZGVsYXlNcz17MH0+XG4gICAgICAgICAgICAgICAgICA8S2V5TGV0dGVyIGxldHRlcj1cIldcIiAvPlxuICAgICAgICAgICAgICAgIDwvS2V5Q2FwPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiaC03IHctN1wiIC8+XG4gICAgICAgICAgICAgICAgPEtleUNhcCBib290PXtib290fSBkZWxheU1zPXs3MH0+XG4gICAgICAgICAgICAgICAgICA8S2V5TGV0dGVyIGxldHRlcj1cIkFcIiAvPlxuICAgICAgICAgICAgICAgIDwvS2V5Q2FwPlxuICAgICAgICAgICAgICAgIDxLZXlDYXAgYm9vdD17Ym9vdH0gZGVsYXlNcz17MTMwfT5cbiAgICAgICAgICAgICAgICAgIDxLZXlMZXR0ZXIgbGV0dGVyPVwiU1wiIC8+XG4gICAgICAgICAgICAgICAgPC9LZXlDYXA+XG4gICAgICAgICAgICAgICAgPEtleUNhcCBib290PXtib290fSBkZWxheU1zPXsxOTB9PlxuICAgICAgICAgICAgICAgICAgPEtleUxldHRlciBsZXR0ZXI9XCJEXCIgLz5cbiAgICAgICAgICAgICAgICA8L0tleUNhcD5cbiAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgICAgPGRpdlxuICAgICAgICAgICAgICAgIGNsYXNzTmFtZT17XG4gICAgICAgICAgICAgICAgICAnZXhwbG9yZS1rZXktaGludHMtY29ubmVjdG9yIHctcHggaC1bMC41cmVtXSBib3JkZXItbCBib3JkZXItZGFzaGVkIGJvcmRlci1bI2ZmNTM1N10vNDUgJyArXG4gICAgICAgICAgICAgICAgICAoYm9vdCA/ICdleHBsb3JlLWtleS1oaW50cy1jb25uZWN0b3ItLWJvb3QnIDogJycpXG4gICAgICAgICAgICAgICAgfVxuICAgICAgICAgICAgICAgIHN0eWxlPXtib290ID8geyBhbmltYXRpb25EZWxheTogJzI2MG1zJyB9IDogdW5kZWZpbmVkfVxuICAgICAgICAgICAgICAgIGFyaWEtaGlkZGVuXG4gICAgICAgICAgICAgIC8+XG5cbiAgICAgICAgICAgICAgPEtleUNhcCBib290PXtib290fSBkZWxheU1zPXszMjB9IHdpZGU+XG4gICAgICAgICAgICAgICAgU1BBQ0VcbiAgICAgICAgICAgICAgPC9LZXlDYXA+XG4gICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGZsZXgtY29sIGp1c3RpZnktYmV0d2VlbiBoLVs1Ljg1cmVtXSBweS0wLjVcIj5cbiAgICAgICAgICAgICAgPEhpbnRMYWJlbCBib290PXtib290fSBkZWxheU1zPXs5MH0gY2xhc3NOYW1lPVwicHQtMS41XCI+XG4gICAgICAgICAgICAgICAgQ09OVFJPTFxuICAgICAgICAgICAgICA8L0hpbnRMYWJlbD5cbiAgICAgICAgICAgICAgPEhpbnRMYWJlbCBib290PXtib290fSBkZWxheU1zPXszODB9IGNsYXNzTmFtZT1cInBiLTAuNVwiPlxuICAgICAgICAgICAgICAgIEpVTVBcbiAgICAgICAgICAgICAgPC9IaW50TGFiZWw+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9kaXY+XG4gICAgICApfVxuICAgIDwvQW5pbWF0ZVByZXNlbmNlPlxuICApO1xufVxuIl0sImZpbGUiOiJDOi9Vc2Vycy9QQzEvRGVza3RvcC9NeXdlYi9zcmMvY29tcG9uZW50cy91aS9FeHBsb3JlS2V5SGludHMudHN4In0=

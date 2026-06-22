@@ -1,4 +1,4 @@
-import { REBECCA_GLITCH_BURST, REBECCA_REFLECT } from '@/lib/rebecca-hologram-config';
+import { REBECCA_GLITCH_BURST } from '@/lib/rebecca-hologram-config';
 
 const BUILDING01 = {
   x: -25.719642299223366,
@@ -31,7 +31,6 @@ export const BUILDING01_SIGNAL_HOLOGRAM = {
     bloomBoost: 0.2,
     neonSpill: 0.46,
   },
-  reflect: REBECCA_REFLECT,
   signalDropout: {
     interval: 5.8,
     duration: 0.74,

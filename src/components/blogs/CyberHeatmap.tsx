@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import BlogHudPanel from '@/components/blogs/BlogHudPanel';
 import type { HeatmapDay } from '@/data/blogs';
 
@@ -12,6 +12,13 @@ export type CyberHeatmapProps = {
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const WEEKDAY_LABELS = ['', 'MON', '', 'WED', '', 'FRI', ''];
+const HEATMAP_BOOT_BASE_STEP_MS = 2.64;
+const HEATMAP_BOOT_SLOW_TAIL_MS = 2080;
+const HEATMAP_CELL_APPEAR_MS = 220;
+const HEATMAP_FLASH_MIN_DELAY_MS = 0;
+const HEATMAP_FLASH_MAX_DELAY_MS = 360;
+const HEATMAP_FLASH_FAST_MS = 420;
+const HEATMAP_FLASH_SLOW_MS = 1040;
 
 function parseUTCDate(date: string): Date {
   const [year, month, day] = date.split('-').map(Number);
@@ -53,14 +60,98 @@ function buildMonthLabels(weeks: Array<Array<HeatmapDay | null>>): string[] {
   });
 }
 
+function seededUnit(seed: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 4294967295;
+}
+
+function getHeatmapBootDelay(index: number, total: number): number {
+  if (total <= 1) return 0;
+  const progress = index / (total - 1);
+  return Math.round(index * HEATMAP_BOOT_BASE_STEP_MS + progress * progress * progress * HEATMAP_BOOT_SLOW_TAIL_MS);
+}
+
+function getHeatmapFlashDelay(day: HeatmapDay, variant: CyberHeatmapProps['variant']): number {
+  const random = seededUnit(`${variant}:${day.date}:flash-delay`);
+  return Math.round(HEATMAP_FLASH_MIN_DELAY_MS + random * (HEATMAP_FLASH_MAX_DELAY_MS - HEATMAP_FLASH_MIN_DELAY_MS));
+}
+
+function getHeatmapFlashDuration(day: HeatmapDay, variant: CyberHeatmapProps['variant']): number {
+  const random = seededUnit(`${variant}:${day.date}:flash`);
+  return Math.round(HEATMAP_FLASH_FAST_MS + random * (HEATMAP_FLASH_SLOW_MS - HEATMAP_FLASH_FAST_MS));
+}
+
+type HeatmapCellProps = {
+  day: HeatmapDay;
+  bootDelay: number;
+  flashDelay: number;
+  flashDuration: number;
+  booting: boolean;
+  onHover: (day: HeatmapDay) => void;
+  onClear: () => void;
+};
+
+const HeatmapCell = memo(function HeatmapCell({
+  day,
+  bootDelay,
+  flashDelay,
+  flashDuration,
+  booting,
+  onHover,
+  onClear,
+}: HeatmapCellProps) {
+  return (
+    <button
+      type="button"
+      className={`cyber-heatmap-cell ${booting ? 'cyber-heatmap-cell--boot' : ''} level-${day.level}`}
+      aria-label={`${day.date}: ${day.count}`}
+      style={
+        booting
+          ? ({
+              animationDelay: `${bootDelay}ms, ${bootDelay + HEATMAP_CELL_APPEAR_MS + flashDelay}ms`,
+              '--heatmap-flash-duration': `${flashDuration}ms`,
+            } as CSSProperties)
+          : undefined
+      }
+      onMouseEnter={() => onHover(day)}
+      onFocus={() => onHover(day)}
+      onBlur={onClear}
+    />
+  );
+});
+
 export default function CyberHeatmap({ title, subtitle, totalLabel, data, variant }: CyberHeatmapProps) {
   const [hoveredDay, setHoveredDay] = useState<HeatmapDay | null>(null);
+  const [bootingCells, setBootingCells] = useState(true);
   const weeks = useMemo(() => buildWeeks(data), [data]);
   const monthLabels = useMemo(() => buildMonthLabels(weeks), [weeks]);
+  const handleHoverDay = useCallback((day: HeatmapDay) => setHoveredDay(day), []);
+  const clearHoveredDay = useCallback(() => setHoveredDay(null), []);
   const gridStyle = {
     gridTemplateColumns: `repeat(${Math.max(weeks.length, 1)}, var(--heatmap-cell-size))`,
   } as CSSProperties;
   const panelVariant = variant === 'leetcode' ? 'red' : 'cyan';
+  const maxBootDelay = useMemo(
+    () => getHeatmapBootDelay(Math.max(data.length - 1, 0), data.length),
+    [data.length],
+  );
+
+  useEffect(() => {
+    setBootingCells(true);
+    const bootDoneTimer = window.setTimeout(
+      () => setBootingCells(false),
+      maxBootDelay + HEATMAP_CELL_APPEAR_MS + HEATMAP_FLASH_MAX_DELAY_MS + HEATMAP_FLASH_SLOW_MS,
+    );
+    return () => {
+      window.clearTimeout(bootDoneTimer);
+    };
+  }, [data, maxBootDelay, variant]);
+
+  let visibleCellIndex = 0;
 
   return (
     <div className={`cyber-heatmap cyber-heatmap--${variant}`} data-variant={variant}>
@@ -121,16 +212,21 @@ export default function CyberHeatmap({ title, subtitle, totalLabel, data, varian
                       );
                     }
 
+                    const bootDelay = getHeatmapBootDelay(visibleCellIndex, data.length);
+                    const flashDelay = getHeatmapFlashDelay(day, variant);
+                    const flashDuration = getHeatmapFlashDuration(day, variant);
+                    visibleCellIndex += 1;
+
                     return (
-                      <button
+                      <HeatmapCell
                         key={day.date}
-                        type="button"
-                        className={`cyber-heatmap-cell level-${day.level}`}
-                        title={`${day.date}: ${day.count}`}
-                        aria-label={`${day.date}: ${day.count}`}
-                        onMouseEnter={() => setHoveredDay(day)}
-                        onFocus={() => setHoveredDay(day)}
-                        onBlur={() => setHoveredDay(null)}
+                        day={day}
+                        bootDelay={bootDelay}
+                        flashDelay={flashDelay}
+                        flashDuration={flashDuration}
+                        booting={bootingCells}
+                        onHover={handleHoverDay}
+                        onClear={clearHoveredDay}
                       />
                     );
                   }),

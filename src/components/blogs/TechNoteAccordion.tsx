@@ -1,4 +1,3 @@
-import { AnimatePresence, motion } from 'motion/react';
 import BlogHudPanel from '@/components/blogs/BlogHudPanel';
 import type { TechNote } from '@/data/blogs';
 
@@ -38,7 +37,7 @@ export default function TechNoteAccordion({
             <article key={note.id} className={`tech-note-card ${expanded ? 'tech-note-card--expanded' : ''}`}>
               <div className="tech-note-card__inner">
                 <div className="tech-note-card__cover">
-                  {note.cover && <img src={note.cover} alt={note.title} />}
+                  {note.cover && <img src={note.cover} alt={note.title} loading="lazy" decoding="async" />}
                   <span>{note.id.slice(0, 7)}</span>
                 </div>
 
@@ -84,22 +83,11 @@ export default function TechNoteAccordion({
                     <span>{note.readTime}</span>
                   </div>
 
-                  <AnimatePresence initial={false}>
-                    {expanded && note.content && (
-                      <motion.div
-                        key={`${note.id}-content`}
-                        initial={{ height: 0, opacity: 0, filter: 'blur(4px)' }}
-                        animate={{ height: 'auto', opacity: 1, filter: 'blur(0px)' }}
-                        exit={{ height: 0, opacity: 0, filter: 'blur(4px)' }}
-                        transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-                        className="overflow-hidden"
-                      >
-                        <p className="mt-3 border-t border-white/10 pt-3 font-mono text-[12px] leading-6 text-[#9cf8ff]/66">
-                          {note.content}
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {expanded && note.content && (
+                    <p className="mt-3 border-t border-white/10 pt-3 font-mono text-[12px] leading-6 text-[#9cf8ff]/66">
+                      {note.content}
+                    </p>
+                  )}
                 </div>
               </div>
             </article>

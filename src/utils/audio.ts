@@ -687,8 +687,8 @@ let ambientStartQueued = false;
 const AMBIENT_NORMAL_VOLUME = 0.24;
 /** 博客阅读态下持续抑制的响度（约为常规的 18%） */
 const AMBIENT_READING_VOLUME = 0.044;
-/** ABOUT/Profile 页背景抑制量 = 博客详情抑制量 × 此比例 */
-const ABOUT_FOCUS_SUPPRESSION_RATIO = 0.55;
+/** ABOUT/Profile keeps background music at 30% of its normal loudness. */
+const ABOUT_FOCUS_RETAIN_RATIO = 0.3;
 /** 文字闪动音效常规总线响度 */
 const TEXT_GLITCH_NORMAL_BUS_GAIN = 0.8092;
 let blogReadingModeActive = false;
@@ -704,7 +704,7 @@ function getAmbientRetainRatio() {
 function getSuppressionAmount() {
   const blogSuppression = 1 - getAmbientRetainRatio();
   if (blogReadingModeActive) return blogSuppression;
-  if (aboutFocusModeActive) return blogSuppression * ABOUT_FOCUS_SUPPRESSION_RATIO;
+  if (aboutFocusModeActive) return 1 - ABOUT_FOCUS_RETAIN_RATIO;
   return 0;
 }
 
@@ -882,10 +882,11 @@ export function isBlogReadingModeActive() {
   return blogReadingModeActive;
 }
 
-/** 进入 ABOUT/Profile 页面：背景抑制量为博客详情的 55%。 */
+/** Enter ABOUT/Profile: play a warp cue and suppress background music to 30%. */
 export function enterAboutFocusMode() {
   if (aboutFocusModeActive) return;
   aboutFocusModeActive = true;
+  playJumpSound();
   if (isAmbientPlaying) {
     rampAmbientVolume(getAmbientVolumeForMode(), 760);
   }

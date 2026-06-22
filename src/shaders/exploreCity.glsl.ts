@@ -1,6 +1,14 @@
 /** EXPLORE 赛博城市 — 建筑 / 霓虹灯牌 / 楼基光池 */
 
-import { GLSL_GEOMETRIC_REFLECTION_SEAM } from '@/shaders/cyberTileReflection';
+const GLSL_GEOMETRIC_REFLECTION_SEAM = /* glsl */ `
+  float geoSeamMask(vec2 xz) {
+    return 0.0;
+  }
+
+  vec2 geoReflectionSeamDistortion(vec2 xz) {
+    return vec2(0.0);
+  }
+`;
 
 export const exploreCityBuildingVert = /* glsl */ `
   attribute float aSeed;
@@ -470,6 +478,13 @@ export const exploreNeonSignFrag = /* glsl */ `
   uniform float uAtlasCols;
   uniform float uSignBloomBoost;
   uniform float uSignOuterGlow;
+  uniform float uPosterGlowThreshold;
+  uniform float uPosterGlowSoftness;
+  uniform float uPosterSaturationThreshold;
+  uniform float uPosterEmissiveBoost;
+  uniform float uPosterBaseBrightness;
+  uniform float uPosterPulseStrength;
+  uniform float uPosterScanlineStrength;
   uniform float uReflectSurfacePass;
   uniform float uDistanceFadeStart;
   uniform float uDistanceFadeEnd;
@@ -479,6 +494,7 @@ export const exploreNeonSignFrag = /* glsl */ `
   uniform float uLod2End;
   uniform vec3 uFarFogColor;
   uniform float uFarFogDensity;
+  uniform float uGlitchFullEnd;
   uniform float uBrickPitch;
   uniform float uBrickGap;
   uniform vec2 uBrickOrigin;
@@ -780,7 +796,9 @@ export const exploreNeonSignFrag = /* glsl */ `
 
     float isHero = 1.0 - step(0.5, vSignTier);
     float isNormal = step(0.5, vSignTier) * (1.0 - step(1.5, vSignTier));
-    float enabled = vGlitchEnabled * isHero;
+    float isBackground = step(1.5, vSignTier);
+    float glitchDistOk = 1.0 - smoothstep(uGlitchFullEnd, uGlitchFullEnd + 10.0, depth);
+    float enabled = vGlitchEnabled * isHero * glitchDistOk;
     float interval = max(vGlitchInterval, 0.001);
     float phase = vGlitchPhase;
     float cycle = mod(uTime + phase, interval);
@@ -800,7 +818,7 @@ export const exploreNeonSignFrag = /* glsl */ `
     float noiseInterval = 5.0 + hash21(vec2(vSeed + vPosterIndex, 606.0)) * 5.0;
     float noiseCycle = mod(uTime + hash21(vec2(vSeed, 1660.0)) * noiseInterval, noiseInterval);
     float noiseWindow = 0.12;
-    float noiseActive = poster06 * isHero * step(noiseCycle, noiseWindow);
+    float noiseActive = poster06 * isHero * glitchDistOk * step(noiseCycle, noiseWindow);
     float noiseStep = floor(clamp(noiseCycle / noiseWindow, 0.0, 1.0) * 2.0);
     float noiseIntensity = noiseActive * (1.0 - step(1.5, noiseStep)) * 0.28;
     if (noiseIntensity > 0.001) {
@@ -810,7 +828,7 @@ export const exploreNeonSignFrag = /* glsl */ `
     float microInterval = 5.0 + hash21(vec2(vSeed + vPosterIndex, 90.0)) * 5.0;
     float microCycle = mod(uTime + hash21(vec2(vSeed, 909.0)) * microInterval, microInterval);
     float microWindow = 0.12;
-    float microActive = poster09 * isHero * step(microCycle, microWindow);
+    float microActive = poster09 * isHero * glitchDistOk * step(microCycle, microWindow);
     float microT = clamp(microCycle / microWindow, 0.0, 1.0);
     float microIntensity = sin(microT * 3.14159265) * microActive;
     if (microIntensity > 0.001) {
@@ -835,11 +853,22 @@ export const exploreNeonSignFrag = /* glsl */ `
     }
 
     float cheapPulse = 0.94 + 0.06 * sin(uTime * (1.2 + vFlickerSpeed * 5.0) + vSeed * 7.13);
-    float scan = sin((uv.y + uTime * (0.05 + vFlickerSpeed * 0.28)) * 180.0) * (0.006 + vFlickerSpeed * 0.014) + 0.978;
+    cheapPulse *= 1.0 + sin(uTime * 0.45 + vSeed * 2.1) * uPosterPulseStrength;
+    float scanWave = 0.978 - uPosterScanlineStrength
+      * (0.5 + 0.5 * sin((uv.y + uTime * (0.05 + vFlickerSpeed * 0.28)) * 180.0))
+      * (0.12 + vFlickerSpeed * 0.08);
+    float scan = mix(scanWave, 1.0, isBackground);
     poster *= scan;
 
     float luma = dot(poster, vec3(0.299, 0.587, 0.114));
-    float emissiveMask = smoothstep(0.16, 0.68, luma);
+    float maxPoster = max(poster.r, max(poster.g, poster.b));
+    float minPoster = min(poster.r, min(poster.g, poster.b));
+    float saturation = maxPoster - minPoster;
+    float emissiveMask = smoothstep(uPosterGlowThreshold, uPosterGlowThreshold + uPosterGlowSoftness, luma);
+    emissiveMask *= smoothstep(uPosterSaturationThreshold, uPosterSaturationThreshold + 0.15, saturation);
+    emissiveMask *= mix(0.85, 1.25, clamp(saturation, 0.0, 1.0));
+    emissiveMask = clamp(emissiveMask, 0.0, 1.0);
+    poster *= uPosterBaseBrightness;
     vec3 lodPoster = mix(poster, poster * 0.58, lod1Mix);
     lodPoster = mix(lodPoster, vColor * emissiveMask * 0.72, lod2Mix);
     poster = lodPoster;
@@ -851,7 +880,7 @@ export const exploreNeonSignFrag = /* glsl */ `
     posterGain *= vEmissiveIntensity * mix(cheapPulse, 1.0, isHero);
     posterGain += microIntensity * 0.22;
     col += poster * edgeFade * posterGain;
-    col += poster * edgeFade * emissiveMask * uSignBloomBoost * (0.18 + isHero * 4.0);
+    col += poster * edgeFade * emissiveMask * uSignBloomBoost * uPosterEmissiveBoost * (0.18 + isHero * 4.0);
     col += vColor * emissiveMask * edgeFade * (0.3 + isNormal * 0.18);
 
     if (noiseActive > 0.5) {

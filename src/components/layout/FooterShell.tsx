@@ -76,10 +76,7 @@ export default function FooterShell({ onPrev, onNext, hidePageNav = false }: Foo
       </div>
 
       {/* Cyberpunk BG Sound status toggle button - Visible and sticky on all devices */}
-      <div className="flex items-center gap-3.5 pointer-events-auto select-none font-sans ml-auto">
-        <span className={`font-mono text-[9px] md:text-[10px] uppercase tracking-widest text-[#ffb3af] transition-opacity duration-300 ${isSoundOn ? 'opacity-100 animate-pulse' : 'opacity-40'}`}>
-          {isSoundOn ? 'SOUND_SYS: ACTIVE' : 'SOUND_SYS: MUTED'}
-        </span>
+      <div className="flex items-center pointer-events-auto select-none font-sans ml-auto">
         <button
           onClick={handleToggleSound}
           aria-label="Toggle Background Hum"

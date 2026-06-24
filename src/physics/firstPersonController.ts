@@ -187,11 +187,15 @@ export class FirstPersonController {
   }
 
   /** 上次 EXPLORE 第三人称相机位与朝向 — 用于分区切回时的镜头过渡 */
-  getExploreViewState(outCamera: THREE.Vector3): { yaw: number; pitch: number } {
+  getExploreViewState(outCamera: THREE.Vector3): { yaw: number; pitch: number; fov: number } {
     this.getInterpolatedBodyPosition(outCamera, 1);
     const cameraPitch = this.pitch + THIRD_PERSON_PITCH_BIAS;
     this.writeThirdPersonCameraPosition(outCamera, this.yaw, cameraPitch);
-    return { yaw: this.yaw, pitch: cameraPitch };
+    const fxBlend = this.getCameraStretchFxBlendForPitch(this.pitch, this.getMoveIntensity());
+    const fovBoost = CAMERA_WALK_FOV_BOOST * fxBlend;
+    const push = this.getDollyPushForFovBoost(fovBoost);
+    outCamera.addScaledVector(this.viewForward, push);
+    return { yaw: this.yaw, pitch: cameraPitch, fov: CAMERA_BASE_FOV + fovBoost };
   }
 
   /** 第三人称相机世界坐标（pivot 沿视线反向后退） */
@@ -228,8 +232,17 @@ export class FirstPersonController {
   }
 
   /** 过渡终点交接：传入已含 THIRD_PERSON_PITCH_BIAS 的相机 pitch */
-  commitExploreCameraHandoff(yaw: number, cameraPitch: number) {
+  commitExploreCameraHandoff(yaw: number, cameraPitch: number, hydrateStretch = false) {
     this.commitIntroHandoff(yaw, cameraPitch - THIRD_PERSON_PITCH_BIAS);
+    if (!hydrateStretch) return;
+
+    const pitchStretch = this.getPitchStretchFactorForPitch(this.pitch);
+    const fxBlend = this.getCameraStretchFxBlendForPitch(this.pitch, this.getMoveIntensity());
+    const fovBoost = CAMERA_WALK_FOV_BOOST * fxBlend;
+    this.smoothPitchStretch = pitchStretch;
+    this.fxBlend = fxBlend;
+    this.smoothFovBoost = fovBoost;
+    this.smoothPush = this.getDollyPushForFovBoost(fovBoost);
   }
 
   private attachInputListeners() {
@@ -391,8 +404,7 @@ export class FirstPersonController {
     this.smoothPitchStretch = THREE.MathUtils.lerp(this.smoothPitchStretch, pitchTarget, pitchSmoothT);
 
     const stretchWeight = Math.max(moveBlend, this.smoothPitchStretch);
-    const easedBlend = stretchWeight * stretchWeight * (3 - 2 * stretchWeight);
-    const stretchBlend = Math.pow(easedBlend, CAMERA_STRETCH_CONTRAST);
+    const stretchBlend = this.getCameraStretchFxBlendForWeight(stretchWeight);
 
     const smoothT = 1 - Math.exp(-CAMERA_FX_SMOOTH * delta);
     this.fxBlend = THREE.MathUtils.lerp(this.fxBlend, stretchBlend, smoothT);
@@ -446,7 +458,11 @@ export class FirstPersonController {
    * pitch 为弧度：0 = 水平，正值 = 仰视。
    */
   private getPitchStretchFactor(): number {
-    const pitchAbove = this.pitch - CAMERA_PITCH_STRETCH_THRESHOLD;
+    return this.getPitchStretchFactorForPitch(this.pitch);
+  }
+
+  private getPitchStretchFactorForPitch(playerPitch: number): number {
+    const pitchAbove = playerPitch - CAMERA_PITCH_STRETCH_THRESHOLD;
     if (pitchAbove <= 0) return 0;
 
     const range = CAMERA_PITCH_STRETCH_MAX - CAMERA_PITCH_STRETCH_THRESHOLD;
@@ -455,6 +471,25 @@ export class FirstPersonController {
     const linear = pitchAbove / range;
     const eased = linear * linear * (3 - 2 * linear);
     return THREE.MathUtils.clamp(eased, 0, 1);
+  }
+
+  private getCameraStretchFxBlendForPitch(playerPitch: number, moveBlend = 0): number {
+    const stretchWeight = Math.max(moveBlend, this.getPitchStretchFactorForPitch(playerPitch));
+    return this.getCameraStretchFxBlendForWeight(stretchWeight);
+  }
+
+  private getCameraStretchFxBlendForWeight(stretchWeight: number): number {
+    const easedBlend = stretchWeight * stretchWeight * (3 - 2 * stretchWeight);
+    return Math.pow(easedBlend, CAMERA_STRETCH_CONTRAST);
+  }
+
+  private getDollyPushForFovBoost(fovBoost: number): number {
+    if (fovBoost <= 0) return 0;
+    const baseTan = Math.tan(THREE.MathUtils.degToRad(CAMERA_BASE_FOV * 0.5));
+    const targetTan = Math.tan(
+      THREE.MathUtils.degToRad((CAMERA_BASE_FOV + fovBoost) * 0.5),
+    );
+    return (1 - baseTan / targetTan) * THIRD_PERSON_DISTANCE;
   }
 
   /** 按住移动键时立即给一点拉伸权重，避免刚起步速度未上来时无反馈 */

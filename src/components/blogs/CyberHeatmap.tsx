@@ -10,6 +10,8 @@ export type CyberHeatmapProps = {
   variant: 'leetcode' | 'github';
 };
 
+export type CyberHeatmapGridProps = Pick<CyberHeatmapProps, 'data' | 'variant'>;
+
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const WEEKDAY_LABELS = ['', 'MON', '', 'WED', '', 'FRI', ''];
 const HEATMAP_BOOT_BASE_STEP_MS = 2.64;
@@ -19,6 +21,7 @@ const HEATMAP_FLASH_MIN_DELAY_MS = 0;
 const HEATMAP_FLASH_MAX_DELAY_MS = 360;
 const HEATMAP_FLASH_FAST_MS = 420;
 const HEATMAP_FLASH_SLOW_MS = 1040;
+const LEETCODE_HEATMAP_TIMING_SCALE = 0.95;
 
 function parseUTCDate(date: string): Date {
   const [year, month, day] = date.split('-').map(Number);
@@ -69,20 +72,34 @@ function seededUnit(seed: string): number {
   return (hash >>> 0) / 4294967295;
 }
 
-function getHeatmapBootDelay(index: number, total: number): number {
+function scaleHeatmapTiming(value: number, variant: CyberHeatmapProps['variant']): number {
+  return variant === 'leetcode' ? Math.round(value * LEETCODE_HEATMAP_TIMING_SCALE) : value;
+}
+
+function getHeatmapCellAppearMs(variant: CyberHeatmapProps['variant']): number {
+  return scaleHeatmapTiming(HEATMAP_CELL_APPEAR_MS, variant);
+}
+
+function getHeatmapBootDelay(index: number, total: number, variant: CyberHeatmapProps['variant']): number {
   if (total <= 1) return 0;
   const progress = index / (total - 1);
-  return Math.round(index * HEATMAP_BOOT_BASE_STEP_MS + progress * progress * progress * HEATMAP_BOOT_SLOW_TAIL_MS);
+  return scaleHeatmapTiming(
+    index * HEATMAP_BOOT_BASE_STEP_MS + progress * progress * progress * HEATMAP_BOOT_SLOW_TAIL_MS,
+    variant,
+  );
 }
 
 function getHeatmapFlashDelay(day: HeatmapDay, variant: CyberHeatmapProps['variant']): number {
   const random = seededUnit(`${variant}:${day.date}:flash-delay`);
-  return Math.round(HEATMAP_FLASH_MIN_DELAY_MS + random * (HEATMAP_FLASH_MAX_DELAY_MS - HEATMAP_FLASH_MIN_DELAY_MS));
+  return scaleHeatmapTiming(
+    HEATMAP_FLASH_MIN_DELAY_MS + random * (HEATMAP_FLASH_MAX_DELAY_MS - HEATMAP_FLASH_MIN_DELAY_MS),
+    variant,
+  );
 }
 
 function getHeatmapFlashDuration(day: HeatmapDay, variant: CyberHeatmapProps['variant']): number {
   const random = seededUnit(`${variant}:${day.date}:flash`);
-  return Math.round(HEATMAP_FLASH_FAST_MS + random * (HEATMAP_FLASH_SLOW_MS - HEATMAP_FLASH_FAST_MS));
+  return scaleHeatmapTiming(HEATMAP_FLASH_FAST_MS + random * (HEATMAP_FLASH_SLOW_MS - HEATMAP_FLASH_FAST_MS), variant);
 }
 
 type HeatmapCellProps = {
@@ -90,6 +107,7 @@ type HeatmapCellProps = {
   bootDelay: number;
   flashDelay: number;
   flashDuration: number;
+  cellAppearMs: number;
   booting: boolean;
   onHover: (day: HeatmapDay) => void;
   onClear: () => void;
@@ -100,6 +118,7 @@ const HeatmapCell = memo(function HeatmapCell({
   bootDelay,
   flashDelay,
   flashDuration,
+  cellAppearMs,
   booting,
   onHover,
   onClear,
@@ -112,7 +131,8 @@ const HeatmapCell = memo(function HeatmapCell({
       style={
         booting
           ? ({
-              animationDelay: `${bootDelay}ms, ${bootDelay + HEATMAP_CELL_APPEAR_MS + flashDelay}ms`,
+              animationDelay: `${bootDelay}ms, ${bootDelay + cellAppearMs + flashDelay}ms`,
+              '--heatmap-cell-appear-duration': `${cellAppearMs}ms`,
               '--heatmap-flash-duration': `${flashDuration}ms`,
             } as CSSProperties)
           : undefined
@@ -124,7 +144,7 @@ const HeatmapCell = memo(function HeatmapCell({
   );
 });
 
-export default function CyberHeatmap({ title, subtitle, totalLabel, data, variant }: CyberHeatmapProps) {
+export function CyberHeatmapGrid({ data, variant }: CyberHeatmapGridProps) {
   const [hoveredDay, setHoveredDay] = useState<HeatmapDay | null>(null);
   const [bootingCells, setBootingCells] = useState(true);
   const weeks = useMemo(() => buildWeeks(data), [data]);
@@ -134,24 +154,100 @@ export default function CyberHeatmap({ title, subtitle, totalLabel, data, varian
   const gridStyle = {
     gridTemplateColumns: `repeat(${Math.max(weeks.length, 1)}, var(--heatmap-cell-size))`,
   } as CSSProperties;
-  const panelVariant = variant === 'leetcode' ? 'red' : 'cyan';
+  const cellAppearMs = getHeatmapCellAppearMs(variant);
   const maxBootDelay = useMemo(
-    () => getHeatmapBootDelay(Math.max(data.length - 1, 0), data.length),
-    [data.length],
+    () => getHeatmapBootDelay(Math.max(data.length - 1, 0), data.length, variant),
+    [data.length, variant],
   );
 
   useEffect(() => {
     setBootingCells(true);
     const bootDoneTimer = window.setTimeout(
       () => setBootingCells(false),
-      maxBootDelay + HEATMAP_CELL_APPEAR_MS + HEATMAP_FLASH_MAX_DELAY_MS + HEATMAP_FLASH_SLOW_MS,
+      maxBootDelay +
+        cellAppearMs +
+        scaleHeatmapTiming(HEATMAP_FLASH_MAX_DELAY_MS, variant) +
+        scaleHeatmapTiming(HEATMAP_FLASH_SLOW_MS, variant),
     );
     return () => {
       window.clearTimeout(bootDoneTimer);
     };
-  }, [data, maxBootDelay, variant]);
+  }, [cellAppearMs, data, maxBootDelay, variant]);
 
   let visibleCellIndex = 0;
+
+  return (
+    <div className="relative" onMouseLeave={() => setHoveredDay(null)}>
+      <div className="cyber-heatmap-body">
+        <div className="cyber-heatmap-weekdays" aria-hidden>
+          {WEEKDAY_LABELS.map((label, index) => (
+            <span key={`${label}-${index}`}>{label}</span>
+          ))}
+        </div>
+
+        <div className="cyber-heatmap-scroll">
+          <div className="cyber-heatmap-months" style={gridStyle} aria-hidden>
+            {monthLabels.map((label, index) => (
+              <span key={`${label}-${index}`}>{label}</span>
+            ))}
+          </div>
+
+          <div className="cyber-heatmap-cells" style={gridStyle}>
+            {weeks.flatMap((week, weekIndex) =>
+              week.map((day, dayIndex) => {
+                if (!day) {
+                  return (
+                    <span
+                      key={`empty-${weekIndex}-${dayIndex}`}
+                      className="cyber-heatmap-cell cyber-heatmap-cell--empty"
+                      aria-hidden
+                    />
+                  );
+                }
+
+                const bootDelay = getHeatmapBootDelay(visibleCellIndex, data.length, variant);
+                const flashDelay = getHeatmapFlashDelay(day, variant);
+                const flashDuration = getHeatmapFlashDuration(day, variant);
+                visibleCellIndex += 1;
+
+                return (
+                  <HeatmapCell
+                    key={day.date}
+                    day={day}
+                    bootDelay={bootDelay}
+                    flashDelay={flashDelay}
+                    flashDuration={flashDuration}
+                    cellAppearMs={cellAppearMs}
+                    booting={bootingCells}
+                    onHover={handleHoverDay}
+                    onClear={clearHoveredDay}
+                  />
+                );
+              }),
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="cyber-heatmap-footer">
+        <div className="cyber-heatmap-legend" aria-hidden>
+          <span>LESS</span>
+          {[0, 1, 2, 3, 4].map((level) => (
+            <span key={level} className={`cyber-heatmap-cell level-${level}`} />
+          ))}
+          <span>MORE</span>
+        </div>
+
+        <div className={`cyber-heatmap-tooltip ${hoveredDay ? 'cyber-heatmap-tooltip--visible' : ''}`}>
+          {hoveredDay ? `${hoveredDay.date} // ${hoveredDay.count}` : 'hover cell'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function CyberHeatmap({ title, subtitle, totalLabel, data, variant }: CyberHeatmapProps) {
+  const panelVariant = variant === 'leetcode' ? 'red' : 'cyan';
 
   return (
     <div className={`cyber-heatmap cyber-heatmap--${variant}`} data-variant={variant}>
@@ -180,69 +276,7 @@ export default function CyberHeatmap({ title, subtitle, totalLabel, data, varian
           </div>
         }
       >
-        <div className="relative" onMouseLeave={() => setHoveredDay(null)}>
-          <div className={`cyber-heatmap-tooltip ${hoveredDay ? 'cyber-heatmap-tooltip--visible' : ''}`}>
-            {hoveredDay ? `${hoveredDay.date} // ${hoveredDay.count}` : 'hover cell'}
-          </div>
-
-          <div className="cyber-heatmap-body">
-            <div className="cyber-heatmap-weekdays" aria-hidden>
-              {WEEKDAY_LABELS.map((label, index) => (
-                <span key={`${label}-${index}`}>{label}</span>
-              ))}
-            </div>
-
-            <div className="cyber-heatmap-scroll">
-              <div className="cyber-heatmap-months" style={gridStyle} aria-hidden>
-                {monthLabels.map((label, index) => (
-                  <span key={`${label}-${index}`}>{label}</span>
-                ))}
-              </div>
-
-              <div className="cyber-heatmap-cells" style={gridStyle}>
-                {weeks.flatMap((week, weekIndex) =>
-                  week.map((day, dayIndex) => {
-                    if (!day) {
-                      return (
-                        <span
-                          key={`empty-${weekIndex}-${dayIndex}`}
-                          className="cyber-heatmap-cell cyber-heatmap-cell--empty"
-                          aria-hidden
-                        />
-                      );
-                    }
-
-                    const bootDelay = getHeatmapBootDelay(visibleCellIndex, data.length);
-                    const flashDelay = getHeatmapFlashDelay(day, variant);
-                    const flashDuration = getHeatmapFlashDuration(day, variant);
-                    visibleCellIndex += 1;
-
-                    return (
-                      <HeatmapCell
-                        key={day.date}
-                        day={day}
-                        bootDelay={bootDelay}
-                        flashDelay={flashDelay}
-                        flashDuration={flashDuration}
-                        booting={bootingCells}
-                        onHover={handleHoverDay}
-                        onClear={clearHoveredDay}
-                      />
-                    );
-                  }),
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="cyber-heatmap-legend" aria-hidden>
-            <span>LESS</span>
-            {[0, 1, 2, 3, 4].map((level) => (
-              <span key={level} className={`cyber-heatmap-cell level-${level}`} />
-            ))}
-            <span>MORE</span>
-          </div>
-        </div>
+        <CyberHeatmapGrid data={data} variant={variant} />
       </BlogHudPanel>
     </div>
   );

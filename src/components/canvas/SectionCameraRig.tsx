@@ -53,6 +53,7 @@ type ExploreEntryTransition = {
   endTarget: THREE.Vector3;
   endYaw: number;
   endPitch: number;
+  endFov: number;
 };
 
 const _exploreEyeScratch = new THREE.Vector3();
@@ -62,18 +63,18 @@ function resolveExploreEntryEndpoints(
   controller: FirstPersonController | null | undefined,
   outEndPosition: THREE.Vector3,
   outEndTarget: THREE.Vector3,
-): { yaw: number; pitch: number } {
+): { yaw: number; pitch: number; fov: number } {
   if (controller) {
-    const { yaw, pitch } = controller.getExploreViewState(_exploreEyeScratch);
+    const { yaw, pitch, fov } = controller.getExploreViewState(_exploreEyeScratch);
     outEndPosition.copy(_exploreEyeScratch);
     lookTargetFromYawPitch(_exploreEyeScratch, yaw, pitch, 14, outEndTarget);
-    return { yaw, pitch };
+    return { yaw, pitch, fov };
   }
 
   const preset = SECTION_CAMERA_PRESETS.EXPLORE;
   outEndPosition.set(...preset.position);
   outEndTarget.set(...preset.target);
-  return yawPitchFromLookAt(outEndPosition, outEndTarget);
+  return { ...yawPitchFromLookAt(outEndPosition, outEndTarget), fov: CAMERA_BASE_FOV };
 }
 
 function commitExploreFpsHandoff(
@@ -81,14 +82,16 @@ function commitExploreFpsHandoff(
   controller: FirstPersonController,
   yaw: number,
   cameraPitch: number,
+  targetFov = CAMERA_BASE_FOV,
+  hydrateStretch = false,
 ) {
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = cameraPitch;
   camera.rotation.z = 0;
-  camera.fov = CAMERA_BASE_FOV;
+  camera.fov = targetFov;
   camera.updateProjectionMatrix();
-  controller.commitExploreCameraHandoff(yaw, cameraPitch);
+  controller.commitExploreCameraHandoff(yaw, cameraPitch, hydrateStretch);
   controller.syncCamera(camera, 0, 1);
 }
 
@@ -176,7 +179,7 @@ export default function SectionCameraRig({
       if ((enteredFromOther || entryPending) && perspCamera) {
         const endPosition = new THREE.Vector3();
         const endTarget = new THREE.Vector3();
-        const { yaw: endYaw, pitch: endPitch } = resolveExploreEntryEndpoints(
+        const { yaw: endYaw, pitch: endPitch, fov: endFov } = resolveExploreEntryEndpoints(
           controllerRef?.current,
           endPosition,
           endTarget,
@@ -196,6 +199,7 @@ export default function SectionCameraRig({
           endTarget,
           endYaw,
           endPitch,
+          endFov,
         };
         if (exploreEntryActiveRef) exploreEntryActiveRef.current = true;
         lastSectionRef.current = 'EXPLORE';
@@ -222,7 +226,7 @@ export default function SectionCameraRig({
 
         perspCamera.fov = THREE.MathUtils.lerp(
           EXPLORE_ENTRY_TRANSITION.startFov,
-          CAMERA_BASE_FOV,
+          entry.endFov,
           eased,
         );
         perspCamera.updateProjectionMatrix();
@@ -234,7 +238,14 @@ export default function SectionCameraRig({
 
           const controller = controllerRef?.current;
           if (controller) {
-            commitExploreFpsHandoff(perspCamera, controller, entry.endYaw, entry.endPitch);
+            commitExploreFpsHandoff(
+              perspCamera,
+              controller,
+              entry.endYaw,
+              entry.endPitch,
+              entry.endFov,
+              true,
+            );
           }
         }
         return;
@@ -246,12 +257,12 @@ export default function SectionCameraRig({
         if (controller && perspCamera) {
           const endPosition = new THREE.Vector3();
           const endTarget = new THREE.Vector3();
-          const { yaw, pitch } = resolveExploreEntryEndpoints(
+          const { yaw, pitch, fov } = resolveExploreEntryEndpoints(
             controller,
             endPosition,
             endTarget,
           );
-          commitExploreFpsHandoff(perspCamera, controller, yaw, pitch);
+          commitExploreFpsHandoff(perspCamera, controller, yaw, pitch, fov, true);
         }
       }
 

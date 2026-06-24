@@ -3,14 +3,15 @@ import BlogCategoryTabs, { type BlogCategory } from '@/components/blogs/BlogCate
 import DailyTimeline from '@/components/blogs/DailyTimeline';
 import FeaturedTechNote from '@/components/blogs/FeaturedTechNote';
 import HeatmapPanel from '@/components/blogs/HeatmapPanel';
+import LeetCodePanel from '@/components/leetcode/LeetCodePanel';
 import TechNoteAccordion from '@/components/blogs/TechNoteAccordion';
 import {
   dailyLogs,
   githubHeatmap,
-  leetcodeHeatmap,
   techNotes,
   type HeatmapDay,
 } from '@/data/blogs';
+import { getLeetCodeStats } from '@/data/leetcode';
 import { playClick, playJumpSound } from '@/utils/audio';
 
 function sumCounts(days: HeatmapDay[]): number {
@@ -41,7 +42,7 @@ export default function LogsSection() {
   );
   const [expandedDailyLogIds, setExpandedDailyLogIds] = useState<string[]>([]);
 
-  const leetcodeTotal = useMemo(() => sumCounts(leetcodeHeatmap), []);
+  const leetcodeStats = useMemo(() => getLeetCodeStats(), []);
   const githubTotal = useMemo(() => sumCounts(githubHeatmap), []);
 
   const handleSelectCategory = (category: BlogCategory) => {
@@ -92,13 +93,7 @@ export default function LogsSection() {
           <div className="grid grid-cols-1 gap-4 md:gap-5">
             {showLeetcode && (
               <BlogReveal key="leetcode">
-                <HeatmapPanel
-                  title="LeetCode Activity Matrix"
-                  subtitle="custom calendar feed / mock protocol"
-                  totalLabel={`Total Solved: ${leetcodeTotal}`}
-                  data={leetcodeHeatmap}
-                  variant="leetcode"
-                />
+                <LeetCodePanel stats={leetcodeStats} />
               </BlogReveal>
             )}
             {showGithub && (

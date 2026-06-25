@@ -5,6 +5,8 @@ type TopicTagBarsProps = {
   tags: LeetCodeTopicTag[];
 };
 
+const TOPIC_BAR_DURATION_SCALE = 1.15;
+
 export default function TopicTagBars({ tags }: TopicTagBarsProps) {
   const sortedTags = [...tags].sort((a, b) => b.problemsSolved - a.problemsSolved);
   const maxSolved = Math.max(0, ...sortedTags.map((tag) => tag.problemsSolved));
@@ -23,7 +25,7 @@ export default function TopicTagBars({ tags }: TopicTagBarsProps) {
 
         {sortedTags.map((tag, index) => {
           const percent = maxSolved > 0 ? (tag.problemsSolved / maxSolved) * 100 : 0;
-          const duration = 0.58 + (percent / 100) * 0.82;
+          const duration = (0.58 + (percent / 100) * 0.82) * TOPIC_BAR_DURATION_SCALE;
 
           return (
             <div
@@ -31,7 +33,9 @@ export default function TopicTagBars({ tags }: TopicTagBarsProps) {
               className="leetcode-topic-bars__row"
               title={`${tag.tagName}: ${tag.problemsSolved} solved`}
             >
-              <span className="leetcode-topic-bars__name">{tag.tagName.toUpperCase()}</span>
+              <span className="leetcode-topic-bars__name">
+                <span className="leetcode-topic-bars__token-text">{tag.tagName.toUpperCase()}</span>
+              </span>
               <span className="leetcode-topic-bars__count">{tag.problemsSolved}</span>
               <span className="leetcode-topic-bars__track" aria-hidden>
                 <span

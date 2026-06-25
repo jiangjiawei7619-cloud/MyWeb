@@ -1,22 +1,17 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import BlogCategoryTabs, { type BlogCategory } from '@/components/blogs/BlogCategoryTabs';
 import DailyTimeline from '@/components/blogs/DailyTimeline';
 import FeaturedTechNote from '@/components/blogs/FeaturedTechNote';
-import HeatmapPanel from '@/components/blogs/HeatmapPanel';
+import GitHubPanel from '@/components/github/GitHubPanel';
 import LeetCodePanel from '@/components/leetcode/LeetCodePanel';
 import TechNoteAccordion from '@/components/blogs/TechNoteAccordion';
 import {
   dailyLogs,
-  githubHeatmap,
   techNotes,
-  type HeatmapDay,
 } from '@/data/blogs';
+import { getGitHubStats } from '@/data/github';
 import { getLeetCodeStats } from '@/data/leetcode';
 import { playClick, playJumpSound } from '@/utils/audio';
-
-function sumCounts(days: HeatmapDay[]): number {
-  return days.reduce((total, day) => total + day.count, 0);
-}
 
 function BlogReveal({
   children,
@@ -43,7 +38,7 @@ export default function LogsSection() {
   const [expandedDailyLogIds, setExpandedDailyLogIds] = useState<string[]>([]);
 
   const leetcodeStats = useMemo(() => getLeetCodeStats(), []);
-  const githubTotal = useMemo(() => sumCounts(githubHeatmap), []);
+  const githubStats = useMemo(() => getGitHubStats(), []);
 
   const handleSelectCategory = (category: BlogCategory) => {
     if (category === selectedCategory) return;
@@ -76,6 +71,14 @@ export default function LogsSection() {
   const showDaily = selectedCategory === 'daily';
   const showTechList = selectedCategory === 'tech';
 
+  useEffect(() => {
+    document.body.classList.toggle('blogs-github-page', showGithub);
+
+    return () => {
+      document.body.classList.remove('blogs-github-page');
+    };
+  }, [showGithub]);
+
   return (
     <section className="blogs-hub w-full select-none">
       <div className="blogs-grid-texture" aria-hidden />
@@ -98,13 +101,7 @@ export default function LogsSection() {
             )}
             {showGithub && (
               <BlogReveal key="github">
-                <HeatmapPanel
-                  title="GitHub Contribution Matrix"
-                  subtitle="repo signal feed / mock protocol"
-                  totalLabel={`Contributions: ${githubTotal}`}
-                  data={githubHeatmap}
-                  variant="github"
-                />
+                <GitHubPanel stats={githubStats} />
               </BlogReveal>
             )}
           </div>

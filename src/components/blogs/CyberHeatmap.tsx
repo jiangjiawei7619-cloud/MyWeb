@@ -22,6 +22,7 @@ const HEATMAP_FLASH_MAX_DELAY_MS = 360;
 const HEATMAP_FLASH_FAST_MS = 420;
 const HEATMAP_FLASH_SLOW_MS = 1040;
 const LEETCODE_HEATMAP_TIMING_SCALE = 0.9025;
+const GITHUB_HEATMAP_TIMING_SCALE = 0.87;
 
 function parseUTCDate(date: string): Date {
   const [year, month, day] = date.split('-').map(Number);
@@ -73,7 +74,9 @@ function seededUnit(seed: string): number {
 }
 
 function scaleHeatmapTiming(value: number, variant: CyberHeatmapProps['variant']): number {
-  return variant === 'leetcode' ? Math.round(value * LEETCODE_HEATMAP_TIMING_SCALE) : value;
+  if (variant === 'leetcode') return Math.round(value * LEETCODE_HEATMAP_TIMING_SCALE);
+  if (variant === 'github') return Math.round(value * GITHUB_HEATMAP_TIMING_SCALE);
+  return value;
 }
 
 function getHeatmapCellAppearMs(variant: CyberHeatmapProps['variant']): number {
@@ -152,7 +155,10 @@ export function CyberHeatmapGrid({ data, variant }: CyberHeatmapGridProps) {
   const handleHoverDay = useCallback((day: HeatmapDay) => setHoveredDay(day), []);
   const clearHoveredDay = useCallback(() => setHoveredDay(null), []);
   const gridStyle = {
-    gridTemplateColumns: `repeat(${Math.max(weeks.length, 1)}, var(--heatmap-cell-size))`,
+    gridTemplateColumns:
+      variant === 'github'
+        ? `repeat(${Math.max(weeks.length, 1)}, minmax(0, 1fr))`
+        : `repeat(${Math.max(weeks.length, 1)}, var(--heatmap-cell-size))`,
   } as CSSProperties;
   const cellAppearMs = getHeatmapCellAppearMs(variant);
   const maxBootDelay = useMemo(

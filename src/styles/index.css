@@ -1440,6 +1440,26 @@ body.blog-reading-mode #noise-layer {
   padding-bottom: 2rem;
 }
 
+body.blogs-github-page .home-reveal main {
+  overflow-y: hidden;
+  padding-bottom: 1rem;
+}
+
+body.blogs-github-page .blogs-hub {
+  padding-bottom: 0;
+}
+
+@media (max-height: 820px) {
+  body.blogs-github-page .home-reveal main {
+    padding-top: 5.7rem;
+  }
+
+  body.blogs-github-page .blogs-content-shell {
+    transform: scale(0.82);
+    transform-origin: top center;
+  }
+}
+
 .blogs-content-shell {
   --blogs-brand-safe-left: 300px;
   --blogs-brand-safe-top: 110px;
@@ -2048,8 +2068,7 @@ body.blog-reading-mode #noise-layer {
   text-transform: uppercase;
 }
 
-.leetcode-total-solved__label,
-.leetcode-total-solved__subcopy {
+.leetcode-total-solved__label {
   display: block;
   color: rgba(255, 218, 216, 0.58);
   font-size: 0.66rem;
@@ -2057,14 +2076,62 @@ body.blog-reading-mode #noise-layer {
 }
 
 .leetcode-total-solved__value {
-  display: block;
+  position: relative;
+  display: inline-block;
   margin: 0.15rem 0 0.18rem;
   color: #ff5366;
   font-size: 3.78rem;
   font-weight: 900;
   line-height: 0.95;
   text-shadow: 0 0 7px rgba(255, 80, 95, 0.35), 0 0 18px rgba(255, 80, 118, 0.13);
-  animation: leetcodeDigitFlicker 7.5s steps(1) infinite;
+}
+
+.leetcode-total-solved__value.is-glitch-ready {
+  cursor: pointer;
+}
+
+.leetcode-total-solved__layer {
+  display: inline-flex;
+  align-items: baseline;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-shadow: inherit;
+}
+
+.leetcode-total-solved__layer--rolling {
+  opacity: 1;
+}
+
+.leetcode-total-solved__layer--glitch {
+  position: absolute;
+  left: 0;
+  top: 0.08em;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.leetcode-total-solved__value.is-glitching .leetcode-total-solved__layer--rolling {
+  opacity: 0;
+}
+
+.leetcode-total-solved__value.is-glitching .leetcode-total-solved__layer--glitch {
+  opacity: 1;
+}
+
+.leetcode-total-solved__glitch {
+  color: inherit;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.83em;
+  letter-spacing: 0;
+  line-height: inherit;
+  text-shadow: inherit;
+}
+
+.leetcode-total-solved__value:focus-visible {
+  outline: 1px solid rgba(255, 80, 95, 0.46);
+  outline-offset: 4px;
 }
 
 .leetcode-rolling-number {
@@ -2110,11 +2177,6 @@ body.blog-reading-mode #noise-layer {
 
 .leetcode-inline-rolling-number {
   vertical-align: -0.08em;
-}
-
-.leetcode-total-solved__subcopy {
-  color: rgba(156, 248, 255, 0.56);
-  font-size: 0.6rem;
 }
 
 .leetcode-difficulty {
@@ -2352,6 +2414,8 @@ body.blog-reading-mode #noise-layer {
   align-items: center;
   gap: 0.44rem;
   min-height: 1.24rem;
+  margin: 0 -0.2rem;
+  padding: 0.02rem 0.2rem;
   color: rgba(255, 218, 216, 0.68);
   font-family: var(--font-mono);
   font-size: 0.66rem;
@@ -2359,15 +2423,36 @@ body.blog-reading-mode #noise-layer {
   letter-spacing: 0;
   line-height: 1.1;
   text-transform: uppercase;
+  transition: background 0.18s ease, color 0.18s ease, text-shadow 0.18s ease;
 }
 
 .leetcode-topic-bars__row:hover {
+  background: linear-gradient(90deg, rgba(255, 80, 95, 0.08), rgba(0, 238, 252, 0.035), transparent);
   color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 10px rgba(255, 80, 95, 0.16);
+}
+
+.leetcode-topic-bars__row:hover .leetcode-topic-bars__name .leetcode-topic-bars__token-text {
+  animation: leetcodeSubmissionTextHoverFlash 2.74s linear both;
 }
 
 .leetcode-topic-bars__count {
+  --submission-token-rest-color: #ff6b75;
+  --submission-token-rest-shadow: 0 0 8px rgba(255, 80, 95, 0.38);
   color: #ff6b75;
   text-align: right;
+}
+
+.leetcode-topic-bars__name {
+  --submission-token-rest-color: rgba(255, 218, 216, 0.68);
+  --submission-token-rest-shadow: none;
+}
+
+.leetcode-topic-bars__token-text {
+  display: inline-block;
+  color: var(--submission-token-rest-color);
+  text-shadow: var(--submission-token-rest-shadow);
+  will-change: color, text-shadow;
 }
 
 .leetcode-topic-bars__track {
@@ -2506,20 +2591,6 @@ body.blog-reading-mode #noise-layer {
   }
 }
 
-@keyframes leetcodeDigitFlicker {
-  0%,
-  4%,
-  6%,
-  100% {
-    opacity: 1;
-    filter: brightness(1);
-  }
-  5% {
-    opacity: 0.82;
-    filter: brightness(1.28);
-  }
-}
-
 @keyframes leetcodeSkeletonPulse {
   0%,
   100% {
@@ -2544,7 +2615,1072 @@ body.blog-reading-mode #noise-layer {
   }
 
   .leetcode-submission-feed__token,
-  .leetcode-submission-feed__token-text {
+  .leetcode-submission-feed__token-text,
+  .leetcode-topic-bars__token-text {
+    opacity: 1;
+    animation: none;
+    will-change: auto;
+  }
+}
+
+.blog-hud-panel.github-panel {
+  --github-accent: #23d7ff;
+  --github-accent-soft: rgba(35, 215, 255, 0.34);
+  --github-accent-dim: rgba(35, 215, 255, 0.16);
+  --github-blue: #38a7ff;
+  --github-teal: #1fc7b6;
+  --github-violet: #7c6dff;
+  --github-bg-panel: rgba(4, 9, 12, 0.42);
+  --github-border: rgba(35, 215, 255, 0.3);
+  --github-border-soft: rgba(35, 215, 255, 0.16);
+  --github-border-hover: rgba(35, 215, 255, 0.46);
+  --github-module-corner: rgba(35, 215, 255, 0.48);
+  border-color: rgba(35, 215, 255, 0.36);
+  background:
+    linear-gradient(180deg, rgba(3, 9, 13, 0.82), rgba(2, 6, 10, 0.58)),
+    rgba(4, 9, 12, 0.46);
+  box-shadow: 0 0 18px rgba(35, 215, 255, 0.085), inset 0 0 24px rgba(35, 215, 255, 0.03);
+}
+
+.blog-hud-panel.github-panel::before {
+  opacity: 0.13;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 4px, rgba(255, 255, 255, 0.08) 4px 5px),
+    linear-gradient(90deg, rgba(35, 215, 255, 0.1), transparent 38%, rgba(124, 109, 255, 0.07));
+}
+
+.blog-hud-panel.github-panel::after {
+  opacity: 0.12;
+  background:
+    linear-gradient(to right, rgba(35, 215, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 167, 255, 0.06) 1px, transparent 1px);
+  background-size: 38px 38px;
+}
+
+.blog-hud-panel.github-panel:hover {
+  border-color: rgba(35, 215, 255, 0.54);
+  box-shadow: 0 0 22px rgba(35, 215, 255, 0.12), inset 0 0 26px rgba(35, 215, 255, 0.04);
+}
+
+.blog-hud-panel.github-panel .blog-hud-corner {
+  color: rgba(35, 215, 255, 0.78);
+  animation: githubCornerFlicker 12s steps(1) infinite;
+}
+
+.github-panel__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.github-panel__header-meta {
+  display: flex;
+  min-width: max-content;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.github-source-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(35, 215, 255, 0.38);
+  border-radius: 4px;
+  padding: 0.22rem 0.46rem;
+  background: rgba(3, 9, 13, 0.66);
+  color: rgba(211, 251, 255, 0.78);
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.github-source-badge.is-fallback {
+  border-color: rgba(124, 109, 255, 0.46);
+  color: rgba(156, 248, 255, 0.82);
+  box-shadow: inset 0 0 12px rgba(124, 109, 255, 0.08);
+}
+
+.github-source-badge.is-live {
+  border-color: rgba(31, 199, 182, 0.52);
+  color: rgba(92, 230, 214, 0.88);
+  box-shadow: inset 0 0 12px rgba(31, 199, 182, 0.1);
+}
+
+.github-fallback-line,
+.github-empty-line {
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.github-fallback-line {
+  margin-bottom: 0.72rem;
+  border-left: 1px solid rgba(124, 109, 255, 0.5);
+  padding: 0.38rem 0.6rem;
+  background: linear-gradient(90deg, rgba(124, 109, 255, 0.08), rgba(35, 215, 255, 0.04), transparent);
+  color: rgba(211, 251, 255, 0.68);
+  font-size: 0.64rem;
+}
+
+.github-panel__main-grid,
+.github-panel__bottom-grid {
+  display: grid;
+  min-width: 0;
+  gap: 0.76rem;
+}
+
+.github-panel__main-grid {
+  grid-template-columns: minmax(0, 1.42fr) minmax(320px, 0.95fr);
+  align-items: stretch;
+}
+
+.github-panel__bottom-grid {
+  grid-template-columns: minmax(0, 1.42fr) minmax(320px, 0.95fr);
+  margin-top: 0.72rem;
+}
+
+.github-panel__heatmap,
+.github-stats-panel,
+.github-activity-panel,
+.github-tech-stack-panel {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  border: 1px solid var(--github-border-soft);
+  border-radius: 5px;
+  padding: 0.76rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.016), rgba(255, 255, 255, 0)),
+    var(--github-bg-panel);
+  box-shadow: inset 0 1px 0 rgba(35, 215, 255, 0.08);
+}
+
+.github-panel__heatmap {
+  --heatmap-cell-size: 17px;
+  --heatmap-gap: 6px;
+  display: grid;
+  align-content: center;
+  border-color: rgba(35, 215, 255, 0.24);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0)),
+    rgba(4, 11, 15, 0.44);
+  box-shadow: inset 0 1px 0 rgba(35, 215, 255, 0.11), 0 0 11px rgba(35, 215, 255, 0.03);
+}
+
+.github-stats-panel {
+  display: grid;
+  grid-template-rows: minmax(0, auto) minmax(0, auto) minmax(0, auto);
+  gap: 0.72rem;
+  border-color: var(--github-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.014), rgba(255, 255, 255, 0)),
+    rgba(3, 11, 15, 0.36);
+}
+
+.github-activity-panel,
+.github-tech-stack-panel {
+  padding: 0.7rem 0.76rem;
+}
+
+.github-panel__heatmap::before,
+.github-stats-panel::before,
+.github-activity-panel::before,
+.github-tech-stack-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.07;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 4px, rgba(255, 255, 255, 0.1) 4px 5px),
+    linear-gradient(90deg, rgba(35, 215, 255, 0.1), transparent 42%, rgba(124, 109, 255, 0.07));
+}
+
+.github-panel__heatmap::after,
+.github-stats-panel::after,
+.github-activity-panel::after,
+.github-tech-stack-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.78;
+  background:
+    linear-gradient(var(--github-module-corner), var(--github-module-corner)) left top / 13px 1px no-repeat,
+    linear-gradient(var(--github-module-corner), var(--github-module-corner)) left top / 1px 13px no-repeat,
+    linear-gradient(var(--github-module-corner), var(--github-module-corner)) right top / 13px 1px no-repeat,
+    linear-gradient(var(--github-module-corner), var(--github-module-corner)) right top / 1px 13px no-repeat;
+}
+
+.github-activity-panel::after,
+.github-tech-stack-panel::after {
+  --github-module-corner: rgba(35, 215, 255, 0.36);
+  opacity: 0.68;
+}
+
+.github-panel__heatmap > *,
+.github-stats-panel > *,
+.github-activity-panel > *,
+.github-tech-stack-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.github-panel__heatmap:hover,
+.github-stats-panel:hover,
+.github-activity-panel:hover,
+.github-tech-stack-panel:hover {
+  border-color: var(--github-border-hover);
+  box-shadow: inset 0 1px 0 rgba(35, 215, 255, 0.12), 0 0 12px rgba(35, 215, 255, 0.048);
+}
+
+.github-module-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.58rem;
+  color: rgba(211, 251, 255, 0.62);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.github-module-label span:last-child {
+  color: rgba(35, 215, 255, 0.62);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.github-total-contributions {
+  border-bottom: 1px solid rgba(35, 215, 255, 0.19);
+  padding-bottom: 0.66rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.github-total-contributions__label,
+.github-total-contributions__subcopy {
+  display: block;
+  color: rgba(211, 251, 255, 0.58);
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.github-total-contributions__value {
+  position: relative;
+  display: inline-block;
+  margin: 0.12rem 0 0.14rem;
+  color: var(--github-accent);
+  font-size: 3.55rem;
+  font-weight: 900;
+  line-height: 0.95;
+  text-shadow: 0 0 7px rgba(35, 215, 255, 0.36), 0 0 18px rgba(56, 167, 255, 0.16);
+  animation: githubTotalGlow 6.8s ease-in-out infinite;
+}
+
+.github-total-contributions__value.is-glitch-ready {
+  cursor: pointer;
+}
+
+.github-total-contributions__layer {
+  display: inline-flex;
+  align-items: baseline;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-shadow: inherit;
+}
+
+.github-total-contributions__layer--rolling {
+  opacity: 1;
+}
+
+.github-total-contributions__layer--glitch {
+  position: absolute;
+  left: 0;
+  top: 0.13em;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.github-total-contributions__value.is-glitching .github-total-contributions__layer--rolling {
+  opacity: 0;
+}
+
+.github-total-contributions__value.is-glitching .github-total-contributions__layer--glitch {
+  opacity: 1;
+}
+
+.github-total-contributions__glitch {
+  color: inherit;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  letter-spacing: 0;
+  line-height: inherit;
+  text-shadow: inherit;
+}
+
+.github-total-contributions__value:focus-visible {
+  outline: 1px solid rgba(35, 215, 255, 0.5);
+  outline-offset: 4px;
+}
+
+.github-total-contributions__subcopy {
+  color: rgba(156, 248, 255, 0.56);
+  font-size: 0.58rem;
+}
+
+.github-commit-pulse {
+  border-bottom: 1px solid rgba(35, 215, 255, 0.14);
+  padding-bottom: 0.64rem;
+}
+
+.github-commit-pulse__scope {
+  display: flex;
+  gap: 0.42rem;
+  margin: -0.18rem 0 0.2rem;
+  color: rgba(211, 251, 255, 0.36);
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.github-commit-pulse__scope .is-active {
+  color: rgba(35, 215, 255, 0.82);
+  text-shadow: 0 0 8px rgba(35, 215, 255, 0.22);
+}
+
+.github-commit-pulse__svg {
+  display: block;
+  width: 100%;
+  height: 4.65rem;
+  overflow: visible;
+}
+
+.github-commit-pulse__baseline {
+  stroke: rgba(35, 215, 255, 0.16);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.github-commit-pulse__reveal-mask {
+  transform: scaleX(0);
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: githubPulseLineEnter 1.35s cubic-bezier(0.16, 1, 0.3, 1) 120ms forwards;
+}
+
+.github-commit-pulse__trace {
+  fill: none;
+  stroke: var(--github-accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  filter: drop-shadow(0 0 5px rgba(35, 215, 255, 0.38));
+  vector-effect: non-scaling-stroke;
+}
+
+.github-commit-pulse__trace--shadow {
+  stroke: rgba(56, 167, 255, 0.18);
+  stroke-width: 6;
+  filter: blur(3px);
+}
+
+.github-commit-pulse__trace--flow {
+  stroke: rgba(255, 255, 255, 0.86);
+  stroke-dasharray: 18 240;
+  stroke-dashoffset: 0;
+  stroke-width: 1;
+  opacity: 0.48;
+  animation: githubPulseSweep 5.4s linear infinite;
+}
+
+.github-commit-pulse__dot {
+  fill: rgba(156, 248, 255, 0.88);
+  opacity: 0.78;
+  filter: drop-shadow(0 0 4px rgba(35, 215, 255, 0.46));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    githubPulseDotEnter 0.36s cubic-bezier(0.16, 1, 0.3, 1) var(--pulse-enter-delay, 0ms) both,
+    githubPulseDot 4.6s ease-in-out calc(var(--pulse-enter-delay, 0ms) + 0.36s + var(--pulse-dot-delay, 0ms)) infinite;
+}
+
+.github-streak-strip__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.36rem;
+  margin: -0.08rem 0 0.5rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.github-streak-strip__summary strong {
+  color: rgba(156, 248, 255, 0.94);
+  font-size: 1.46rem;
+  line-height: 1;
+  text-shadow: 0 0 10px rgba(35, 215, 255, 0.18);
+}
+
+.github-streak-strip__summary span {
+  color: rgba(211, 251, 255, 0.5);
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.github-streak-strip__bars {
+  display: grid;
+  grid-template-columns: repeat(var(--github-streak-days), minmax(3px, 1fr));
+  align-items: end;
+  gap: 3px;
+  height: 2.55rem;
+}
+
+.github-streak-strip__bar {
+  display: block;
+  height: var(--streak-height, 10%);
+  min-height: 4px;
+  border: 0;
+  border-radius: 2px 2px 1px 1px;
+  background: rgba(156, 248, 255, var(--streak-alpha, 0.28));
+  box-shadow: none;
+  transform-origin: bottom center;
+  animation:
+    githubStreakBarEnter 0.72s cubic-bezier(0.16, 1, 0.3, 1) var(--streak-enter-delay, 0ms) both,
+    githubStreakPulse 4.8s ease-in-out calc(var(--streak-enter-delay, 0ms) + 0.72s + var(--streak-delay, 0ms)) infinite;
+}
+
+.github-streak-strip__bar.is-empty {
+  background: rgba(35, 215, 255, 0.055);
+  box-shadow: none;
+}
+
+.github-activity-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.github-activity-feed__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.2rem minmax(5.7rem, 0.76fr) minmax(0, 1.35fr) 4.7rem 4rem;
+  align-items: center;
+  gap: 0.42rem;
+  min-height: 1.58rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.044);
+  padding: 0.13rem 0.2rem 0.13rem 1rem;
+  color: rgba(211, 251, 255, 0.66);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background 0.18s ease, color 0.18s ease, text-shadow 0.18s ease;
+}
+
+.github-activity-feed__row::before {
+  content: '>';
+  position: absolute;
+  left: 0.18rem;
+  color: rgba(35, 215, 255, 0.54);
+}
+
+.github-activity-feed__row:hover,
+.github-activity-feed__row:focus-visible {
+  background: linear-gradient(90deg, rgba(35, 215, 255, 0.075), rgba(124, 109, 255, 0.035), transparent);
+  color: rgba(255, 255, 255, 0.9);
+  outline: none;
+  text-shadow: 0 0 10px rgba(35, 215, 255, 0.16);
+}
+
+.github-activity-feed__token {
+  --activity-token-rest-color: rgba(211, 251, 255, 0.66);
+  --activity-token-rest-shadow: none;
+  opacity: 0;
+  text-shadow: none;
+  animation: githubActivityTokenAppear 1ms linear var(--activity-token-enter-delay, 0ms) forwards;
+  will-change: opacity;
+}
+
+.github-activity-feed__token-text {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--activity-token-rest-color);
+  text-overflow: ellipsis;
+  text-shadow: var(--activity-token-rest-shadow);
+  white-space: nowrap;
+  will-change: color, text-shadow;
+}
+
+.github-activity-feed:not(.github-activity-feed--entry-complete) .github-activity-feed__token-text {
+  animation: githubActivityTextEnterFlash 2.74s linear var(--activity-token-enter-delay, 0ms);
+}
+
+.github-activity-feed__row:hover .github-activity-feed__token-text,
+.github-activity-feed__row:focus-visible .github-activity-feed__token-text {
+  animation: githubActivityTextHoverFlash 2.74s linear both;
+}
+
+.github-activity-feed__type {
+  font-weight: 900;
+}
+
+.github-activity-feed__type.is-push {
+  --activity-token-rest-color: var(--github-accent);
+  --activity-token-rest-shadow: 0 0 8px rgba(35, 215, 255, 0.32);
+  color: var(--github-accent);
+  text-shadow: 0 0 8px rgba(35, 215, 255, 0.32);
+}
+
+.github-activity-feed__type.is-pr,
+.github-activity-feed__type.is-release {
+  --activity-token-rest-color: var(--github-blue);
+  --activity-token-rest-shadow: 0 0 8px rgba(56, 167, 255, 0.28);
+  color: var(--github-blue);
+  text-shadow: 0 0 8px rgba(56, 167, 255, 0.28);
+}
+
+.github-activity-feed__type.is-issue {
+  --activity-token-rest-color: rgba(153, 140, 255, 0.84);
+  color: rgba(153, 140, 255, 0.84);
+}
+
+.github-activity-feed__type.is-watch,
+.github-activity-feed__type.is-fork {
+  --activity-token-rest-color: rgba(92, 230, 214, 0.82);
+  color: rgba(92, 230, 214, 0.82);
+}
+
+.github-activity-feed__repo,
+.github-activity-feed__message,
+.github-activity-feed__meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-activity-feed__repo {
+  --activity-token-rest-color: rgba(156, 248, 255, 0.76);
+  color: rgba(156, 248, 255, 0.76);
+}
+
+.github-activity-feed__message {
+  --activity-token-rest-color: rgba(211, 251, 255, 0.58);
+  color: rgba(211, 251, 255, 0.58);
+}
+
+.github-activity-feed__meta,
+.github-activity-feed__time {
+  --activity-token-rest-color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.42);
+  white-space: nowrap;
+}
+
+.github-tech-stack-ring {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(10.8rem, 0.88fr) minmax(8.2rem, 1fr);
+  align-items: center;
+  gap: 0.72rem;
+  min-height: 13.3rem;
+  overflow: hidden;
+  border: 1px solid rgba(35, 215, 255, 0.08);
+  border-radius: 4px;
+  padding: 0.48rem;
+  background:
+    radial-gradient(circle at 34% 48%, rgba(35, 215, 255, 0.1), transparent 34%),
+    radial-gradient(circle at 67% 42%, rgba(124, 109, 255, 0.08), transparent 33%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0));
+}
+
+.github-tech-stack-ring__stage {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 11.7rem;
+  place-items: center;
+}
+
+.github-tech-stack-ring__svg {
+  display: block;
+  width: min(100%, 12.2rem);
+  aspect-ratio: 1;
+  overflow: visible;
+  filter: drop-shadow(0 0 12px rgba(35, 215, 255, 0.08));
+}
+
+.github-tech-stack-ring__track,
+.github-tech-stack-ring__segment {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+.github-tech-stack-ring__track--stack {
+  stroke: rgba(124, 109, 255, 0.11);
+  stroke-width: 9;
+}
+
+.github-tech-stack-ring__track--language {
+  stroke: rgba(35, 215, 255, 0.12);
+  stroke-width: 7;
+}
+
+.github-tech-stack-ring__connectors line {
+  stroke: var(--segment-color, var(--github-accent));
+  stroke-width: 0.42;
+  opacity: 0.32;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--segment-color, var(--github-accent)) 36%, transparent));
+  vector-effect: non-scaling-stroke;
+  animation: githubStackConnectorPulse 4.8s ease-in-out var(--segment-delay, 0ms) infinite;
+}
+
+.github-tech-stack-ring__segment {
+  stroke: var(--segment-color, var(--github-accent));
+  stroke-dasharray: var(--segment-dash);
+  stroke-dashoffset: var(--segment-offset);
+  stroke-linecap: round;
+  opacity: 0.88;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--segment-color, var(--github-accent)) 40%, transparent));
+  animation:
+    githubStackRingEnter 0.9s cubic-bezier(0.2, 0.84, 0.18, 1) var(--segment-delay, 0ms) both,
+    githubStackRingPulse 5.4s ease-in-out calc(var(--segment-delay, 0ms) + 0.9s) infinite;
+}
+
+.github-tech-stack-ring__segment--language {
+  stroke-width: 7;
+}
+
+.github-tech-stack-ring__segment--stack {
+  stroke-width: 9;
+}
+
+.github-tech-stack-ring__center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  width: 5.55rem;
+  min-height: 4.3rem;
+  transform: translate(-50%, -50%);
+  place-items: center;
+  color: rgba(211, 251, 255, 0.58);
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  line-height: 1.06;
+  text-align: center;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.github-tech-stack-ring__center span {
+  font-size: 0.5rem;
+  font-weight: 800;
+}
+
+.github-tech-stack-ring__center strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(156, 248, 255, 0.9);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  text-shadow: 0 0 9px rgba(35, 215, 255, 0.22);
+  white-space: nowrap;
+}
+
+.github-tech-stack-ring__center em {
+  max-width: 100%;
+  overflow: hidden;
+  color: rgba(184, 173, 255, 0.72);
+  font-size: 0.5rem;
+  font-style: normal;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-tech-stack-ring__legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+  min-width: 0;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.github-tech-stack-ring__legend-row {
+  min-width: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+  padding-bottom: 0.38rem;
+  opacity: 0;
+  transform: translateY(-0.44rem);
+  animation: githubStackLegendRowEnter 0.78s cubic-bezier(0.16, 1, 0.3, 1) var(--legend-row-delay, 0ms) forwards;
+  filter: blur(5px);
+  will-change: opacity, transform, filter;
+}
+
+.github-tech-stack-ring__legend-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.github-tech-stack-ring__legend-language {
+  display: grid;
+  grid-template-columns: 0.56rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.34rem;
+  min-width: 0;
+}
+
+.github-tech-stack-ring__swatch {
+  width: 0.48rem;
+  height: 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--segment-color, var(--github-accent)) 72%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--segment-color, var(--github-accent)) 72%, transparent);
+  box-shadow: 0 0 9px color-mix(in srgb, var(--segment-color, var(--github-accent)) 38%, transparent);
+}
+
+.github-tech-stack-ring__legend-language strong,
+.github-tech-stack-ring__legend-language em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-tech-stack-ring__legend-language strong {
+  color: rgba(211, 251, 255, 0.75);
+  font-size: 0.57rem;
+  font-weight: 900;
+}
+
+.github-tech-stack-ring__legend-language em {
+  color: rgba(156, 248, 255, 0.62);
+  font-size: 0.54rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.github-tech-stack-ring__stack-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+  min-width: 0;
+  margin-top: 0.25rem;
+  padding-left: 0.9rem;
+}
+
+.github-tech-stack-ring__stack-chip {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 6.4rem;
+  gap: 0.25rem;
+  color: rgba(211, 251, 255, 0.5);
+  font-size: 0.48rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.github-tech-stack-ring__stack-chip i {
+  width: 0.24rem;
+  height: 0.24rem;
+  border-radius: 50%;
+  background: var(--segment-color, var(--github-accent));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--segment-color, var(--github-accent)) 40%, transparent);
+}
+
+.github-tech-stack-ring__stack-chip span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-tech-stack-ring__stack-chip.is-muted {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.github-empty-line {
+  padding: 0.45rem 0;
+  color: rgba(211, 251, 255, 0.46);
+  font-size: 0.68rem;
+}
+
+.github-loading-protocol {
+  display: grid;
+  gap: 0.7rem;
+  border: 1px solid rgba(35, 215, 255, 0.34);
+  border-radius: 5px;
+  padding: 1rem;
+  background: rgba(4, 9, 12, 0.52);
+  color: rgba(156, 248, 255, 0.66);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.github-loading-protocol i {
+  display: block;
+  height: 0.58rem;
+  width: 100%;
+  background: linear-gradient(90deg, rgba(35, 215, 255, 0.22), rgba(124, 109, 255, 0.08), rgba(31, 199, 182, 0.14));
+  animation: leetcodeSkeletonPulse 1.2s steps(4) infinite;
+}
+
+@keyframes githubTotalGlow {
+  0%,
+  100% {
+    filter: brightness(1);
+    text-shadow: 0 0 7px rgba(35, 215, 255, 0.34), 0 0 18px rgba(56, 167, 255, 0.15);
+  }
+  50% {
+    filter: brightness(1.08);
+    text-shadow: 0 0 10px rgba(35, 215, 255, 0.48), 0 0 22px rgba(56, 167, 255, 0.2);
+  }
+}
+
+@keyframes githubPulseSweep {
+  to {
+    stroke-dashoffset: -258;
+  }
+}
+
+@keyframes githubPulseLineEnter {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes githubPulseDot {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+  45% {
+    opacity: 0.96;
+  }
+}
+
+@keyframes githubPulseDotEnter {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes githubStreakBarEnter {
+  0% {
+    opacity: 0;
+    transform: scaleY(0);
+  }
+  58% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+@keyframes githubStreakPulse {
+  0%,
+  100% {
+    filter: brightness(0.96);
+  }
+  50% {
+    filter: brightness(1.16);
+  }
+}
+
+@keyframes githubStackRingEnter {
+  0% {
+    opacity: 0;
+    stroke-dasharray: 0 100;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.88;
+    stroke-dasharray: var(--segment-dash);
+  }
+}
+
+@keyframes githubStackRingPulse {
+  0%,
+  100% {
+    opacity: 0.82;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes githubStackConnectorPulse {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+@keyframes githubStackLegendRowEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(-0.44rem);
+    filter: blur(5px);
+  }
+  58% {
+    opacity: 0.78;
+    filter: blur(1px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes githubActivityTokenAppear {
+  from,
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes githubActivityTextEnterFlash {
+  0% {
+    color: #23d7ff;
+    text-shadow: 0 0 8px rgba(35, 215, 255, 0.36);
+  }
+  1.45%,
+  3.74%,
+  7.48%,
+  13.29%,
+  21.89%,
+  36.28% {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.74), 0 0 18px rgba(35, 215, 255, 0.48);
+  }
+  2.46%,
+  5.47%,
+  10.33%,
+  17.6%,
+  29.58% {
+    color: #23d7ff;
+    text-shadow: 0 0 8px rgba(35, 215, 255, 0.36);
+  }
+  43%,
+  100% {
+    color: var(--activity-token-rest-color);
+    text-shadow: var(--activity-token-rest-shadow);
+  }
+}
+
+@keyframes githubActivityTextHoverFlash {
+  0% {
+    color: #23d7ff;
+    text-shadow: 0 0 8px rgba(35, 215, 255, 0.36);
+  }
+  1.45%,
+  3.74%,
+  7.48%,
+  13.29%,
+  21.89%,
+  36.28% {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.74), 0 0 18px rgba(35, 215, 255, 0.48);
+  }
+  2.46%,
+  5.47%,
+  10.33%,
+  17.6%,
+  29.58% {
+    color: #23d7ff;
+    text-shadow: 0 0 8px rgba(35, 215, 255, 0.36);
+  }
+  100% {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.74), 0 0 18px rgba(35, 215, 255, 0.48);
+  }
+}
+
+@keyframes githubCornerFlicker {
+  0%,
+  91%,
+  94%,
+  100% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 0.58;
+  }
+  93% {
+    opacity: 0.82;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blog-hud-panel.github-panel .blog-hud-corner,
+  .github-total-contributions__value,
+  .github-commit-pulse__reveal-mask,
+  .github-commit-pulse__trace--flow,
+  .github-commit-pulse__dot,
+  .github-streak-strip__bar,
+  .github-tech-stack-ring__segment,
+  .github-tech-stack-ring__connectors line,
+  .github-tech-stack-ring__legend-row,
+  .github-loading-protocol i {
+    animation: none;
+  }
+
+  .github-tech-stack-ring__segment {
+    opacity: 0.88;
+    stroke-dasharray: var(--segment-dash);
+  }
+
+  .github-commit-pulse__reveal-mask {
+    transform: scaleX(1);
+  }
+
+  .github-tech-stack-ring__legend-row {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    will-change: auto;
+  }
+
+  .github-activity-feed__token,
+  .github-activity-feed__token-text {
     opacity: 1;
     animation: none;
     will-change: auto;
@@ -2591,6 +3727,11 @@ body.blog-reading-mode #noise-layer {
   scrollbar-color: rgba(0, 238, 252, 0.35) rgba(255, 255, 255, 0.04);
 }
 
+.cyber-heatmap--github .cyber-heatmap-scroll {
+  overflow: visible;
+  padding-bottom: 0;
+}
+
 .cyber-heatmap-months {
   display: grid;
   width: max-content;
@@ -2609,6 +3750,12 @@ body.blog-reading-mode #noise-layer {
   grid-template-rows: repeat(7, var(--heatmap-cell-size));
   grid-auto-flow: column;
   gap: var(--heatmap-gap);
+}
+
+.cyber-heatmap--github .cyber-heatmap-months,
+.cyber-heatmap--github .cyber-heatmap-cells {
+  width: 100%;
+  min-width: 0;
 }
 
 .cyber-heatmap-cell {
@@ -2927,9 +4074,31 @@ button.cyber-heatmap-cell {
 }
 
 @media (max-width: 1100px) {
+  .github-panel__main-grid,
+  .github-panel__bottom-grid,
   .leetcode-panel__main-grid,
   .leetcode-panel__bottom-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .github-stats-panel {
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.2fr) minmax(0, 0.85fr);
+    grid-template-rows: auto;
+    align-items: stretch;
+  }
+
+  .github-total-contributions {
+    border-right: 1px solid rgba(35, 215, 255, 0.19);
+    border-bottom: 0;
+    padding-right: 0.78rem;
+    padding-bottom: 0;
+  }
+
+  .github-commit-pulse {
+    border-right: 1px solid rgba(35, 215, 255, 0.14);
+    border-bottom: 0;
+    padding-right: 0.78rem;
+    padding-bottom: 0;
   }
 
   .leetcode-stats-panel {
@@ -3010,6 +4179,31 @@ button.cyber-heatmap-cell {
     min-width: 0;
   }
 
+  .github-panel__header-meta {
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .github-stats-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .github-total-contributions,
+  .github-commit-pulse {
+    border-right: 0;
+    border-bottom: 1px solid rgba(35, 215, 255, 0.18);
+    padding-right: 0;
+    padding-bottom: 0.7rem;
+  }
+
+  .github-activity-feed__row {
+    grid-template-columns: 3rem minmax(5.4rem, 0.8fr) minmax(0, 1.25fr) 3.8rem;
+  }
+
+  .github-activity-feed__meta {
+    display: none;
+  }
+
   .leetcode-stats-panel {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -3071,6 +4265,57 @@ button.cyber-heatmap-cell {
   .cyber-heatmap--leetcode .leetcode-panel__heatmap {
     --heatmap-cell-size: 12px;
     --heatmap-gap: 4px;
+  }
+
+  .github-panel__heatmap {
+    --heatmap-cell-size: 10px;
+    --heatmap-gap: 4px;
+  }
+
+  .github-panel__heatmap,
+  .github-stats-panel,
+  .github-activity-panel,
+  .github-tech-stack-panel {
+    padding: 0.62rem;
+  }
+
+  .github-total-contributions__value {
+    font-size: 2.86rem;
+  }
+
+  .github-module-label {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .github-activity-feed__row {
+    grid-template-columns: 2.75rem minmax(4.8rem, 0.78fr) minmax(0, 1.15fr) 3.3rem;
+    gap: 0.34rem;
+    font-size: 0.61rem;
+  }
+
+  .github-tech-stack-ring {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 19.8rem;
+    gap: 0.42rem;
+    padding: 0.52rem;
+  }
+
+  .github-tech-stack-ring__stage {
+    min-height: 11.8rem;
+  }
+
+  .github-tech-stack-ring__svg {
+    width: min(100%, 11.8rem);
+  }
+
+  .github-tech-stack-ring__legend {
+    gap: 0.36rem;
+  }
+
+  .github-tech-stack-ring__stack-list {
+    padding-left: 0.78rem;
   }
 
   .leetcode-panel__heatmap,

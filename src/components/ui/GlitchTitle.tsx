@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getTextGlitchVisualScale, isBlogReadingModeActive, playTextGlitchFx } from '@/utils/audio';
 
+type JapaneseTonePalette = 'default' | 'blue-violet';
+
 interface GlitchTitleProps {
   english: string;
   japanese: string;
@@ -10,8 +12,10 @@ interface GlitchTitleProps {
   trigger?: number | boolean;
   /** 日文阶段字色（默认淡粉，与英文红形成对比） */
   japaneseToneClass?: string;
+  japaneseTonePalette?: JapaneseTonePalette;
   /** 乱码阶段字色 */
   glitchToneClass?: string;
+  glitchShadow?: string;
   /** 每个字符占位宽度（em），越小字距越紧 */
   charSlotEm?: number;
   /** 空格占位宽度（em） */
@@ -33,6 +37,8 @@ const DEFAULT_GLITCH_TONE = 'text-[#ff5357] scale-y-110 skew-x-3';
 const DEFAULT_GLITCH_TONE_READING = 'text-[#ff5357] scale-y-[1.04] skew-x-1';
 const JAPANESE_PINK_TONES = ['#ffe8e4', '#ffd0cb', '#ffb3af', '#ff8d92'];
 const JAPANESE_CYAN_TONES = ['#d9ffff', '#9cf8ff', '#67edf5', '#c6fbff'];
+const JAPANESE_BLUE_TONES = ['#d9ffff', '#9cf8ff', '#67edf5', '#38a7ff'];
+const JAPANESE_VIOLET_TONES = ['#e5e0ff', '#b8adff', '#9a8cff', '#7c6dff'];
 
 function seededToneUnit(seed: number) {
   let hash = Math.imul(seed ^ 0x9e3779b9, 1664525) + 1013904223;
@@ -42,9 +48,20 @@ function seededToneUnit(seed: number) {
   return (hash >>> 0) / 4294967295;
 }
 
-function getJapaneseToneStyle(index: number, cycleId: number) {
+function getJapaneseToneStyle(index: number, cycleId: number, palette: JapaneseTonePalette = 'default') {
   const mix = seededToneUnit((cycleId + 1) * 4099 + index * 9176);
   const shade = seededToneUnit((cycleId + 3) * 2657 + index * 6151);
+  if (palette === 'blue-violet') {
+    const blueTone = mix > 0.5;
+    const tones = blueTone ? JAPANESE_BLUE_TONES : JAPANESE_VIOLET_TONES;
+    const color = tones[Math.floor(shade * tones.length) % tones.length];
+    const glowColor = blueTone ? 'rgba(35,215,255,0.22)' : 'rgba(124,109,255,0.24)';
+    return {
+      color,
+      textShadow: `0 0 ${blueTone ? 5 : 6}px ${glowColor}`,
+    };
+  }
+
   const cyanTone = mix > 0.5;
   const tones = cyanTone ? JAPANESE_CYAN_TONES : JAPANESE_PINK_TONES;
   const color = tones[Math.floor(shade * tones.length) % tones.length];
@@ -67,7 +84,9 @@ export default function GlitchTitle({
   autoGlitch = true,
   trigger,
   japaneseToneClass = DEFAULT_JAPANESE_TONE,
+  japaneseTonePalette = 'default',
   glitchToneClass = DEFAULT_GLITCH_TONE,
+  glitchShadow,
   charSlotEm = 1.15,
   spaceSlotEm = 0.4,
 }: GlitchTitleProps) {
@@ -284,7 +303,7 @@ export default function GlitchTitle({
       }}
       style={{
         textShadow: globalGlitch
-          ? `${0.7 * getTextGlitchVisualScale()}px 0 #00eefc, -${0.7 * getTextGlitchVisualScale()}px 0 #ff5357, 0 0 ${0.5 * getTextGlitchVisualScale()}px rgba(255,179,175,0.35)`
+          ? (glitchShadow ?? `${0.7 * getTextGlitchVisualScale()}px 0 #00eefc, -${0.7 * getTextGlitchVisualScale()}px 0 #ff5357, 0 0 ${0.5 * getTextGlitchVisualScale()}px rgba(255,179,175,0.35)`)
           : 'none',
         display: 'inline-block',
         whiteSpace: 'nowrap',
@@ -292,7 +311,8 @@ export default function GlitchTitle({
     >
       {charStates.map((state, index) => {
         const slotEm = state.char === ' ' ? spaceSlotEm : charSlotEm;
-        const toneStyle = state.tone === 'japanese' ? getJapaneseToneStyle(index, cycleIdRef.current) : undefined;
+        const toneStyle =
+          state.tone === 'japanese' ? getJapaneseToneStyle(index, cycleIdRef.current, japaneseTonePalette) : undefined;
         return (
         <span
           key={index}

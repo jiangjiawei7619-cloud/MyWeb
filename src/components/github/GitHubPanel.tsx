@@ -7,6 +7,7 @@ import type { GitHubStats } from '@/data/github';
 
 type GitHubPanelProps = {
   stats: GitHubStats;
+  entryKey?: number | string;
   loading?: boolean;
   error?: string;
 };
@@ -22,7 +23,7 @@ function GitHubLoadingProtocol() {
   );
 }
 
-export default function GitHubPanel({ stats, loading = false, error }: GitHubPanelProps) {
+export default function GitHubPanel({ stats, entryKey, loading = false, error }: GitHubPanelProps) {
   const fallbackActive = Boolean(error || stats.error || stats.source === 'mock');
 
   return (
@@ -30,6 +31,8 @@ export default function GitHubPanel({ stats, loading = false, error }: GitHubPan
       <BlogHudPanel
         variant="cyan"
         className="github-panel"
+        entryAnimation
+        entryKey={entryKey}
         header={
           <div className="github-panel__header">
             <div className="min-w-0">

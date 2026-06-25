@@ -96,12 +96,12 @@ export default function LogsSection() {
           <div className="grid grid-cols-1 gap-4 md:gap-5">
             {showLeetcode && (
               <BlogReveal key="leetcode">
-                <LeetCodePanel stats={leetcodeStats} />
+                <LeetCodePanel stats={leetcodeStats} entryKey={selectedCategory} />
               </BlogReveal>
             )}
             {showGithub && (
               <BlogReveal key="github">
-                <GitHubPanel stats={githubStats} />
+                <GitHubPanel stats={githubStats} entryKey={selectedCategory} />
               </BlogReveal>
             )}
           </div>

@@ -7,6 +7,7 @@ import type { LeetCodeStats } from '@/data/leetcode';
 
 type LeetCodePanelProps = {
   stats: LeetCodeStats;
+  entryKey?: number | string;
   loading?: boolean;
   error?: string;
 };
@@ -22,7 +23,7 @@ function LeetCodeLoadingProtocol() {
   );
 }
 
-export default function LeetCodePanel({ stats, loading = false, error }: LeetCodePanelProps) {
+export default function LeetCodePanel({ stats, entryKey, loading = false, error }: LeetCodePanelProps) {
   const fallbackActive = Boolean(error || stats.error || stats.source === 'mock');
 
   return (
@@ -30,6 +31,8 @@ export default function LeetCodePanel({ stats, loading = false, error }: LeetCod
       <BlogHudPanel
         variant="red"
         className="leetcode-panel"
+        entryAnimation
+        entryKey={entryKey}
         header={
           <div className="leetcode-panel__header">
             <div className="min-w-0">

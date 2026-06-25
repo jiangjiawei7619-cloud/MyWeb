@@ -1639,6 +1639,12 @@ body.blogs-github-page .blogs-hub {
 }
 
 .blog-hud-panel {
+  --hud-border: rgba(0, 238, 252, 0.42);
+  --hud-glow: rgba(0, 238, 252, 0.42);
+  --hud-glow-soft: rgba(0, 238, 252, 0.2);
+  --hud-enter-frame-duration: 560ms;
+  --hud-enter-corner-duration: 320ms;
+  --hud-enter-module-duration: 320ms;
   position: relative;
   overflow: hidden;
   border-radius: 8px;
@@ -1673,6 +1679,234 @@ body.blogs-github-page .blogs-hub {
     linear-gradient(to right, rgba(0, 238, 252, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 83, 87, 0.07) 1px, transparent 1px);
   background-size: 38px 38px;
+}
+
+.hud-matrix-panel {
+  border-color: transparent;
+}
+
+.hud-frame-reveal-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    linear-gradient(var(--hud-border), var(--hud-border)) left top / 0 1px no-repeat,
+    linear-gradient(var(--hud-border), var(--hud-border)) right top / 0 1px no-repeat,
+    linear-gradient(var(--hud-border), var(--hud-border)) left bottom / 0 1px no-repeat,
+    linear-gradient(var(--hud-border), var(--hud-border)) right bottom / 0 1px no-repeat,
+    linear-gradient(var(--hud-border), var(--hud-border)) left top / 1px 0 no-repeat,
+    linear-gradient(var(--hud-border), var(--hud-border)) right top / 1px 0 no-repeat,
+    linear-gradient(var(--hud-border), var(--hud-border)) left bottom / 1px 0 no-repeat,
+    linear-gradient(var(--hud-border), var(--hud-border)) right bottom / 1px 0 no-repeat;
+  box-shadow: inset 0 0 0 1px transparent;
+}
+
+.hud-matrix-panel.is-entering .hud-frame-reveal-layer {
+  animation: hudFrameReveal var(--hud-enter-frame-duration) cubic-bezier(0.19, 1, 0.22, 1) 90ms forwards;
+}
+
+.hud-matrix-panel.is-idle .hud-frame-reveal-layer {
+  opacity: 1;
+  background-size:
+    calc(50% + 1px) 1px,
+    calc(50% + 1px) 1px,
+    calc(50% + 1px) 1px,
+    calc(50% + 1px) 1px,
+    1px calc(50% + 1px),
+    1px calc(50% + 1px),
+    1px calc(50% + 1px),
+    1px calc(50% + 1px);
+  filter: drop-shadow(0 0 7px var(--hud-glow-soft));
+}
+
+.hud-matrix-panel.blog-hud-panel:hover {
+  border-color: transparent;
+}
+
+.hud-matrix-panel.blog-hud-panel:hover .hud-frame-reveal-layer {
+  filter: drop-shadow(0 0 8px var(--hud-glow-soft));
+}
+
+.hud-matrix-panel .blog-hud-corner {
+  z-index: 4;
+}
+
+.hud-matrix-panel.is-entering .blog-hud-corner {
+  animation: hudCornerBoot var(--hud-enter-corner-duration) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hud-matrix-panel.is-entering :where(
+  .leetcode-panel__header,
+  .leetcode-loading-protocol,
+  .leetcode-panel__heatmap,
+  .leetcode-stats-panel,
+  .leetcode-terminal-panel,
+  .leetcode-topic-panel,
+  .github-panel__header,
+  .github-loading-protocol,
+  .github-fallback-line,
+  .github-panel__heatmap,
+  .github-stats-panel,
+  .github-activity-panel,
+  .github-tech-stack-panel
+) {
+  opacity: 0;
+  transform: translateY(4px);
+  filter: blur(1.5px);
+  animation: hudModuleFadeIn var(--hud-enter-module-duration) cubic-bezier(0.16, 1, 0.3, 1) var(--hud-module-enter-delay, 260ms) forwards;
+  will-change: opacity, transform, filter;
+}
+
+.hud-matrix-panel.is-entering :where(.leetcode-panel__header, .github-panel__header) {
+  --hud-module-enter-delay: 150ms;
+}
+
+.hud-matrix-panel.is-entering :where(.leetcode-loading-protocol, .github-loading-protocol, .github-fallback-line) {
+  --hud-module-enter-delay: 220ms;
+}
+
+.hud-matrix-panel.is-entering :where(.leetcode-panel__heatmap, .github-panel__heatmap) {
+  --hud-module-enter-delay: 240ms;
+}
+
+.hud-matrix-panel.is-entering :where(.leetcode-stats-panel, .github-stats-panel) {
+  --hud-module-enter-delay: 285ms;
+}
+
+.hud-matrix-panel.is-entering :where(.leetcode-terminal-panel, .github-activity-panel) {
+  --hud-module-enter-delay: 330ms;
+}
+
+.hud-matrix-panel.is-entering :where(.leetcode-topic-panel, .github-tech-stack-panel) {
+  --hud-module-enter-delay: 375ms;
+}
+
+@keyframes hudFrameReveal {
+  0% {
+    opacity: 0;
+    background-size:
+      0 1px,
+      0 1px,
+      0 1px,
+      0 1px,
+      1px 0,
+      1px 0,
+      1px 0,
+      1px 0;
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  22% {
+    opacity: 0.9;
+    filter: drop-shadow(0 0 8px var(--hud-glow));
+  }
+  48% {
+    opacity: 1;
+    box-shadow: inset 0 0 0 1px var(--hud-border), 0 0 16px var(--hud-glow-soft);
+    filter: drop-shadow(0 0 10px var(--hud-glow));
+  }
+  100% {
+    opacity: 1;
+    background-size:
+      calc(50% + 1px) 1px,
+      calc(50% + 1px) 1px,
+      calc(50% + 1px) 1px,
+      calc(50% + 1px) 1px,
+      1px calc(50% + 1px),
+      1px calc(50% + 1px),
+      1px calc(50% + 1px),
+      1px calc(50% + 1px);
+    box-shadow: inset 0 0 0 1px transparent;
+    filter: drop-shadow(0 0 7px var(--hud-glow-soft));
+  }
+}
+
+@keyframes hudCornerBoot {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  34% {
+    opacity: 1;
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 10px var(--hud-glow));
+  }
+  100% {
+    opacity: 0.88;
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px var(--hud-glow-soft));
+  }
+}
+
+@keyframes hudModuleFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+    filter: blur(1.5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+}
+
+@keyframes hudSourceBadgeSettle {
+  0% {
+    border-color: color-mix(in srgb, var(--source-badge-border) 58%, transparent);
+    box-shadow: none;
+  }
+  64% {
+    border-color: color-mix(in srgb, var(--source-badge-border) 88%, white 12%);
+    box-shadow: inset 0 0 10px color-mix(in srgb, var(--source-badge-border) 20%, transparent);
+  }
+  100% {
+    border-color: var(--source-badge-border);
+    box-shadow: var(--source-badge-shadow);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-matrix-panel,
+  .hud-matrix-panel.is-entering {
+    border-color: var(--hud-border) !important;
+  }
+
+  .hud-frame-reveal-layer {
+    display: none;
+  }
+
+  .hud-matrix-panel .blog-hud-corner,
+  .hud-matrix-panel.is-entering :where(.leetcode-source-badge, .github-source-badge),
+  .hud-matrix-panel.is-entering :where(
+    .leetcode-panel__header,
+    .leetcode-loading-protocol,
+    .leetcode-panel__heatmap,
+    .leetcode-stats-panel,
+    .leetcode-terminal-panel,
+    .leetcode-topic-panel,
+    .github-panel__header,
+    .github-loading-protocol,
+    .github-fallback-line,
+    .github-panel__heatmap,
+    .github-stats-panel,
+    .github-activity-panel,
+    .github-tech-stack-panel
+  ) {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .hud-matrix-panel.is-entering :where(.leetcode-source-badge, .github-source-badge) {
+    border-color: var(--source-badge-border) !important;
+    box-shadow: var(--source-badge-shadow) !important;
+  }
 }
 
 .blog-hud-panel--red {
@@ -1834,11 +2068,14 @@ body.blogs-github-page .blogs-hub {
 }
 
 .blog-hud-panel.leetcode-panel {
+  --hud-border: rgba(255, 80, 95, 0.46);
+  --hud-glow: rgba(255, 80, 95, 0.45);
+  --hud-glow-soft: rgba(255, 80, 95, 0.22);
   --leetcode-module-border-main: rgba(255, 80, 95, 0.22);
   --leetcode-module-border-muted: rgba(255, 80, 95, 0.16);
   --leetcode-module-border-hover: rgba(255, 100, 116, 0.34);
   --leetcode-module-corner: rgba(255, 80, 95, 0.5);
-  border-color: rgba(255, 80, 95, 0.4);
+  border-color: transparent;
   background:
     linear-gradient(180deg, rgba(5, 8, 10, 0.76), rgba(5, 5, 8, 0.58)),
     rgba(5, 8, 10, 0.48);
@@ -1846,7 +2083,7 @@ body.blogs-github-page .blogs-hub {
 }
 
 .blog-hud-panel.leetcode-panel:hover {
-  border-color: rgba(255, 80, 95, 0.48);
+  border-color: transparent;
   box-shadow: 0 0 20px rgba(255, 83, 87, 0.1), inset 0 0 24px rgba(255, 83, 87, 0.038);
 }
 
@@ -1870,9 +2107,11 @@ body.blogs-github-page .blogs-hub {
 }
 
 .leetcode-source-badge {
+  --source-badge-border: rgba(255, 80, 95, 0.35);
+  --source-badge-shadow: none;
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(255, 80, 95, 0.35);
+  border: 1px solid var(--source-badge-border);
   border-radius: 4px;
   padding: 0.22rem 0.46rem;
   background: rgba(5, 8, 10, 0.6);
@@ -1880,18 +2119,28 @@ body.blogs-github-page .blogs-hub {
   font-size: 0.6rem;
   font-weight: 800;
   line-height: 1;
+  box-shadow: var(--source-badge-shadow);
+  transform: translateZ(0);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .leetcode-source-badge.is-fallback {
-  border-color: rgba(255, 80, 95, 0.5);
+  --source-badge-border: rgba(255, 80, 95, 0.5);
+  --source-badge-shadow: inset 0 0 12px rgba(255, 80, 95, 0.08);
   color: #ff9da6;
-  box-shadow: inset 0 0 12px rgba(255, 80, 95, 0.08);
 }
 
 .leetcode-source-badge.is-live {
-  border-color: rgba(0, 238, 252, 0.46);
+  --source-badge-border: rgba(0, 238, 252, 0.46);
+  --source-badge-shadow: inset 0 0 12px rgba(0, 238, 252, 0.08);
   color: #9cf8ff;
-  box-shadow: inset 0 0 12px rgba(0, 238, 252, 0.08);
+}
+
+.hud-matrix-panel.is-entering :where(.leetcode-source-badge, .github-source-badge) {
+  border-color: color-mix(in srgb, var(--source-badge-border) 58%, transparent);
+  box-shadow: none;
+  transition: none;
+  animation: hudSourceBadgeSettle 420ms cubic-bezier(0.16, 1, 0.3, 1) 185ms forwards;
 }
 
 .leetcode-fallback-line,
@@ -2624,6 +2873,9 @@ body.blogs-github-page .blogs-hub {
 }
 
 .blog-hud-panel.github-panel {
+  --hud-border: rgba(35, 215, 255, 0.42);
+  --hud-glow: rgba(35, 215, 255, 0.42);
+  --hud-glow-soft: rgba(35, 215, 255, 0.2);
   --github-accent: #23d7ff;
   --github-accent-soft: rgba(35, 215, 255, 0.34);
   --github-accent-dim: rgba(35, 215, 255, 0.16);
@@ -2635,7 +2887,7 @@ body.blogs-github-page .blogs-hub {
   --github-border-soft: rgba(35, 215, 255, 0.16);
   --github-border-hover: rgba(35, 215, 255, 0.46);
   --github-module-corner: rgba(35, 215, 255, 0.48);
-  border-color: rgba(35, 215, 255, 0.36);
+  border-color: transparent;
   background:
     linear-gradient(180deg, rgba(3, 9, 13, 0.82), rgba(2, 6, 10, 0.58)),
     rgba(4, 9, 12, 0.46);
@@ -2658,12 +2910,15 @@ body.blogs-github-page .blogs-hub {
 }
 
 .blog-hud-panel.github-panel:hover {
-  border-color: rgba(35, 215, 255, 0.54);
+  border-color: transparent;
   box-shadow: 0 0 22px rgba(35, 215, 255, 0.12), inset 0 0 26px rgba(35, 215, 255, 0.04);
 }
 
 .blog-hud-panel.github-panel .blog-hud-corner {
   color: rgba(35, 215, 255, 0.78);
+}
+
+.blog-hud-panel.github-panel.is-idle .blog-hud-corner {
   animation: githubCornerFlicker 12s steps(1) infinite;
 }
 
@@ -2687,9 +2942,11 @@ body.blogs-github-page .blogs-hub {
 }
 
 .github-source-badge {
+  --source-badge-border: rgba(35, 215, 255, 0.38);
+  --source-badge-shadow: none;
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(35, 215, 255, 0.38);
+  border: 1px solid var(--source-badge-border);
   border-radius: 4px;
   padding: 0.22rem 0.46rem;
   background: rgba(3, 9, 13, 0.66);
@@ -2697,18 +2954,21 @@ body.blogs-github-page .blogs-hub {
   font-size: 0.6rem;
   font-weight: 800;
   line-height: 1;
+  box-shadow: var(--source-badge-shadow);
+  transform: translateZ(0);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .github-source-badge.is-fallback {
-  border-color: rgba(124, 109, 255, 0.46);
+  --source-badge-border: rgba(124, 109, 255, 0.46);
+  --source-badge-shadow: inset 0 0 12px rgba(124, 109, 255, 0.08);
   color: rgba(156, 248, 255, 0.82);
-  box-shadow: inset 0 0 12px rgba(124, 109, 255, 0.08);
 }
 
 .github-source-badge.is-live {
-  border-color: rgba(31, 199, 182, 0.52);
+  --source-badge-border: rgba(31, 199, 182, 0.52);
+  --source-badge-shadow: inset 0 0 12px rgba(31, 199, 182, 0.1);
   color: rgba(92, 230, 214, 0.88);
-  box-shadow: inset 0 0 12px rgba(31, 199, 182, 0.1);
 }
 
 .github-fallback-line,

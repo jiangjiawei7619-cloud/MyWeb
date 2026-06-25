@@ -9,6 +9,7 @@ type RollingNumberProps = {
 };
 
 const DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const ROLLING_NUMBER_DURATION_SCALE = 1.356;
 
 function buildDigitSequence(target: number, loops: number): string[] {
   return [
@@ -50,7 +51,7 @@ export default function RollingNumber({
               animate={{ y: `-${finalIndex}em`, opacity: 1, filter: 'blur(0px) brightness(1)' }}
               transition={{
                 delay: delay + index * 0.07,
-                duration: 1.34 + index * 0.12,
+                duration: (1.34 + index * 0.12) * ROLLING_NUMBER_DURATION_SCALE,
                 ease: [0.12, 0.82, 0.16, 1],
               }}
             >

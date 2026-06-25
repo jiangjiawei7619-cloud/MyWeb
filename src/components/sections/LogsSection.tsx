@@ -82,7 +82,7 @@ export default function LogsSection() {
 
       <BlogCategoryTabs selectedCategory={selectedCategory} onSelect={handleSelectCategory} />
 
-      <div className="space-y-4 md:space-y-5">
+      <div className={`blogs-content-shell space-y-4 md:space-y-5 ${showLeetcode ? 'blogs-content-shell--leetcode' : ''}`}>
         {showFeatured && featuredNote && (
           <BlogReveal key={`featured-${selectedCategory}`}>
             <FeaturedTechNote note={featuredNote} expanded={expandedFeatured} onToggle={toggleFeatured} />

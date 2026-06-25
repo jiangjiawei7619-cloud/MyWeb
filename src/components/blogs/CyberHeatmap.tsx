@@ -21,7 +21,7 @@ const HEATMAP_FLASH_MIN_DELAY_MS = 0;
 const HEATMAP_FLASH_MAX_DELAY_MS = 360;
 const HEATMAP_FLASH_FAST_MS = 420;
 const HEATMAP_FLASH_SLOW_MS = 1040;
-const LEETCODE_HEATMAP_TIMING_SCALE = 0.95;
+const LEETCODE_HEATMAP_TIMING_SCALE = 0.9025;
 
 function parseUTCDate(date: string): Date {
   const [year, month, day] = date.split('-').map(Number);

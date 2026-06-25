@@ -38,19 +38,15 @@ export default function LeetCodePanel({ stats, loading = false, error }: LeetCod
                   code_blocks
                 </span>
                 <h3 className="m-0 font-mono text-[13px] font-bold uppercase text-[#9cf8ff]">
-                  LEETCODE ACTIVITY MATRIX
+                  / LC MATRIX
                 </h3>
               </div>
-              <p className="mt-1 font-mono text-[10px] uppercase text-white/42">
-                custom calendar feed / coding stats interface
-              </p>
             </div>
 
             <div className="leetcode-panel__header-meta">
               <span className={`leetcode-source-badge ${fallbackActive ? 'is-fallback' : 'is-live'}`}>
                 {fallbackActive ? 'MOCK PROTOCOL FALLBACK' : 'LIVE GRAPHQL'}
               </span>
-              <span className="leetcode-username">@{stats.username}</span>
             </div>
           </div>
         }
@@ -59,12 +55,6 @@ export default function LeetCodePanel({ stats, loading = false, error }: LeetCod
           <LeetCodeLoadingProtocol />
         ) : (
           <>
-            {fallbackActive && (
-              <div className="leetcode-fallback-line" role={error || stats.error ? 'alert' : 'status'}>
-                &gt; {error ?? stats.error ?? 'MOCK PROTOCOL FALLBACK ACTIVE'} // page remains online
-              </div>
-            )}
-
             <div className="leetcode-panel__main-grid">
               <section className="leetcode-panel__heatmap" aria-label="LeetCode calendar heatmap">
                 <CyberHeatmapGrid data={stats.calendar} variant="leetcode" />

@@ -21,6 +21,7 @@ export type DailyWallDebugMetrics = {
 };
 
 export const DEBUG_DAILY_WALL = false;
+export const DEBUG_DAILY_GLITCH = false;
 
 export const WALL_CONFIG = {
   columns: 9,
@@ -46,16 +47,37 @@ export const DAILY_GLITCH_REVEAL_CONFIG = {
   enabled: true,
   preserveOriginalEntry: true,
   disableGlobalVerticalReveal: true,
-  glitchDurationMin: 0.1,
-  glitchDurationMax: 0.22,
-  maxChromaticOffset: 0.0015,
-  maxSliceOffset: 0.008,
-  sliceCount: 7,
-  maxGlitchStrength: 0.22,
-  edgeGlowStrength: 0.18,
-  noiseStrength: 0.018,
-  perPhotoDelayJitter: 0.12,
+  glitchIntensity: 'medium',
+  entryDuration: 1.003,
+  entryStaggerBase: 0.0413,
+  entryJitter: 0.1888,
+  bootBorderStrength: 0.75,
+  bootBorderDuration: 0.4248,
+  glitchBurstCount: 2,
+  glitchBurstDuration: 0.1416,
+  sliceCount: 9,
+  scanlineOpacity: 0.18,
+  noiseBlockOpacity: 0.16,
+  settleDuration: 0.4012,
   reduceMotion: true,
+} as const;
+
+export const DAILY_GLITCH_INTENSITY_PRESETS = {
+  subtle: {
+    maxGlitchStrength: 0.22,
+    maxChromaticOffset: 0.002,
+    maxSliceOffset: 0.012,
+  },
+  medium: {
+    maxGlitchStrength: 0.42,
+    maxChromaticOffset: 0.0045,
+    maxSliceOffset: 0.028,
+  },
+  strong: {
+    maxGlitchStrength: 0.58,
+    maxChromaticOffset: 0.006,
+    maxSliceOffset: 0.038,
+  },
 } as const;
 
 export const PERFORMANCE_CONFIG = {

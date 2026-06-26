@@ -3,6 +3,8 @@ import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
   DAILY_GLITCH_REVEAL_CONFIG,
+  DAILY_GLITCH_INTENSITY_PRESETS,
+  DEBUG_DAILY_GLITCH,
   type DailyPhoto,
 } from '@/components/blogs/daily/dailyPhotoWallData';
 
@@ -51,8 +53,9 @@ type DailyPhotoPlaneProps = {
 type PhotoEntryFx = {
   seed: number;
   entryDelay: number;
-  glitchStart: number;
-  glitchDuration: number;
+  bootDuration: number;
+  glitchBurstA: number;
+  glitchBurstB: number;
   glitchStrength: number;
 };
 
@@ -61,6 +64,9 @@ const ACCENT_COLORS: Record<NonNullable<DailyPhoto['accent']>, string> = {
   cyan: '#41f4ff',
   violet: '#a66cff',
 };
+
+const GLITCH_INTENSITY =
+  DAILY_GLITCH_INTENSITY_PRESETS[DAILY_GLITCH_REVEAL_CONFIG.glitchIntensity];
 
 const vertexShader = `
   uniform float uCylinderAmount;
@@ -95,7 +101,6 @@ const fragmentShader = `
 
   uniform sampler2D uTexture;
   uniform float uTime;
-  uniform float uReveal;
   uniform float uEntryProgress;
   uniform float uVelocity;
   uniform float uHover;
@@ -108,8 +113,10 @@ const fragmentShader = `
   uniform float uMaxChromaticOffset;
   uniform float uMaxSliceOffset;
   uniform float uSliceCount;
+  uniform float uBootGlow;
   uniform float uEdgeGlowStrength;
-  uniform float uNoiseStrength;
+  uniform float uScanlineOpacity;
+  uniform float uNoiseBlockOpacity;
   uniform vec3 uAccentColor;
 
   varying vec2 vUv;
@@ -134,21 +141,24 @@ const fragmentShader = `
   }
 
   void main() {
-    float reveal = smoothstep(0.0, 1.0, uEntryProgress);
+    float reveal = smoothstep(0.04, 0.68, uEntryProgress);
 
     vec2 uv = coverUv(vUv);
     float velocity = clamp(uVelocity, -1.0, 1.0);
     float absVelocity = abs(velocity);
     float glitch = clamp(uGlitchStrength, 0.0, 1.0);
+    float bootGlow = clamp(uBootGlow, 0.0, 1.0);
 
     uv.x += sin(vUv.y * 12.0 + uTime * 1.2) * velocity * 0.0035 * uDistortionStrength;
     uv.y += sin(vUv.x * 8.0 + uTime) * absVelocity * 0.0026 * uDistortionStrength;
 
     float sliceIndex = floor(vUv.y * uSliceCount);
-    float sliceNoise = hash11(sliceIndex + uSeed * 31.7);
-    float sliceGate = step(0.8, sliceNoise) * glitch;
+    float sliceTime = floor((uTime + uSeed * 0.37) * 18.0);
+    float sliceNoise = hash11(sliceIndex + uSeed * 31.7 + sliceTime * 2.71);
+    float sliceGate = step(0.76, sliceNoise) * glitch;
     float sliceDirection = mix(-1.0, 1.0, step(0.5, hash11(sliceIndex + uSeed * 67.0)));
-    uv.x += sliceGate * sliceDirection * uMaxSliceOffset;
+    float sliceAmount = (0.42 + hash11(sliceIndex + uSeed * 91.0) * 0.58) * uMaxSliceOffset;
+    uv.x += sliceGate * sliceDirection * sliceAmount;
 
     float entryChroma = glitch * uMaxChromaticOffset;
     float chroma = (entryChroma + absVelocity * 0.0014 + uHover * 0.0015) * uDistortionStrength;
@@ -160,18 +170,36 @@ const fragmentShader = `
     float scanline = 1.0 - (0.045 + absVelocity * 0.025) * (0.5 + 0.5 * sin(vUv.y * 760.0));
     float vignette = mix(0.68, 1.0, edgeMask(vUv));
     color *= scanline * vignette;
-    color *= mix(0.86, 1.0, reveal);
+    color *= mix(0.48, 1.0, smoothstep(0.0, 0.72, uEntryProgress));
 
-    float grain = hash11(floor(vUv.x * 96.0) + floor(vUv.y * 72.0) * 17.0 + uSeed * 23.0 + floor(uTime * 10.0));
-    color += (grain - 0.5) * uNoiseStrength * glitch;
+    float decorativeScan = 0.5 + 0.5 * sin((vUv.y + uTime * 0.62 + uSeed) * 260.0);
+    color += uAccentColor * decorativeScan * uScanlineOpacity * max(bootGlow, glitch * 0.5) * 0.045;
 
-    vec3 accent = uAccentColor * (0.045 + uHover * 0.12 + glitch * 0.05);
+    vec2 blockUv = floor(vUv * vec2(18.0, 10.0));
+    float blockTime = floor((uTime + uSeed) * 10.0);
+    float blockRand = hash11(blockUv.x * 17.0 + blockUv.y * 43.0 + uSeed * 101.0 + blockTime);
+    float edgeDistance = min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y));
+    float edgeProximity = 1.0 - smoothstep(0.08, 0.38, edgeDistance);
+    float blockMask = step(0.955, blockRand) * glitch * (0.35 + edgeProximity * 0.65);
+    vec3 dataBlockColor = mix(uAccentColor, vec3(1.0, 0.18, 0.82), step(0.5, hash11(blockRand + uSeed * 7.0)));
+    color = mix(color, dataBlockColor, blockMask * uNoiseBlockOpacity);
+
+    vec3 accent = uAccentColor * (0.045 + uHover * 0.12 + bootGlow * 0.12 + glitch * 0.08);
     float borderGlow = 1.0 - smoothstep(0.0, 0.055, min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y)));
-    float bootGlow = glitch * uEdgeGlowStrength;
-    color += accent + uAccentColor * borderGlow * (0.08 + uHover * 0.18 + bootGlow);
+    float tightEdgeGlow = 1.0 - smoothstep(0.0, 0.035, edgeDistance);
+    float cornerMask =
+      (1.0 - smoothstep(0.04, 0.2, min(vUv.x, 1.0 - vUv.x))) *
+      (1.0 - smoothstep(0.04, 0.2, min(vUv.y, 1.0 - vUv.y)));
+    float bootBorder = (bootGlow + glitch * 0.32) * uEdgeGlowStrength;
+    color += accent;
+    color += uAccentColor * borderGlow * (0.08 + uHover * 0.18);
+    color += uAccentColor * tightEdgeGlow * bootBorder * 0.85;
+    color += uAccentColor * cornerMask * bootBorder * 0.38;
 
     float alpha = reveal * uFarFade;
     alpha *= 0.82 + uHover * 0.18;
+    alpha = max(alpha, tightEdgeGlow * bootGlow * uFarFade * 0.58);
+    alpha = max(alpha, blockMask * uFarFade * 0.32);
 
     gl_FragColor = vec4(color, alpha);
   }
@@ -186,10 +214,10 @@ function smooth01(value: number) {
   return t * t * (3 - 2 * t);
 }
 
-function glitchEnvelope(time: number, start: number, duration: number) {
-  const local = (time - start) / duration;
-  if (local < 0 || local > 1) return 0;
-  return Math.sin(local * Math.PI);
+function pulse(localProgress: number, center: number, width: number) {
+  const distance = Math.abs(localProgress - center);
+  if (distance >= width) return 0;
+  return 1 - smooth01(distance / width);
 }
 
 function hashPhotoId(value: string) {
@@ -254,34 +282,31 @@ function DailyPhotoPlane({
     const centerColumn = (config.columns - 1) * 0.5;
     const seed = hashPhotoId(`${photo.id}:${sourceIndex}`);
     const entryDelay =
-      row * config.entryStagger +
-      Math.abs(column - centerColumn) * 0.018 +
-      seed * DAILY_GLITCH_REVEAL_CONFIG.perPhotoDelayJitter;
-    const glitchDuration = THREE.MathUtils.lerp(
-      DAILY_GLITCH_REVEAL_CONFIG.glitchDurationMin,
-      DAILY_GLITCH_REVEAL_CONFIG.glitchDurationMax,
-      hashPhotoId(`${photo.id}:duration:${index}`),
-    );
+      row * DAILY_GLITCH_REVEAL_CONFIG.entryStaggerBase +
+      Math.abs(column - centerColumn) * 0.024 +
+      seed * DAILY_GLITCH_REVEAL_CONFIG.entryJitter;
     const glitchStrength = THREE.MathUtils.lerp(
-      0.12,
-      DAILY_GLITCH_REVEAL_CONFIG.maxGlitchStrength,
+      GLITCH_INTENSITY.maxGlitchStrength * 0.72,
+      GLITCH_INTENSITY.maxGlitchStrength,
       hashPhotoId(`${photo.id}:strength:${sourceIndex}`),
     );
+    const burstSeedA = hashPhotoId(`${photo.id}:burst-a:${index}`);
+    const burstSeedB = hashPhotoId(`${photo.id}:burst-b:${sourceIndex}`);
 
     return {
       seed,
       entryDelay,
-      glitchStart: entryDelay + 0.1 + hashPhotoId(`${photo.id}:start:${index}`) * 0.16,
-      glitchDuration,
+      bootDuration: DAILY_GLITCH_REVEAL_CONFIG.bootBorderDuration,
+      glitchBurstA: 0.28 + burstSeedA * 0.08,
+      glitchBurstB: 0.52 + burstSeedB * 0.06,
       glitchStrength,
     };
-  }, [config.columns, config.entryStagger, index, photo.id, sourceIndex]);
+  }, [config.columns, index, photo.id, sourceIndex]);
 
   const uniforms = useMemo(
     () => ({
       uTexture: { value: texture },
       uTime: { value: 0 },
-      uReveal: { value: reducedMotion ? 1 : 0 },
       uEntryProgress: { value: reducedMotion ? 1 : 0 },
       uVelocity: { value: 0 },
       uHover: { value: 0 },
@@ -291,11 +316,13 @@ function DailyPhotoPlane({
       uPlaneAspect: { value: config.planeWidth / config.planeHeight },
       uFarFade: { value: 1 },
       uSeed: { value: entryFx.seed },
-      uMaxChromaticOffset: { value: DAILY_GLITCH_REVEAL_CONFIG.maxChromaticOffset },
-      uMaxSliceOffset: { value: DAILY_GLITCH_REVEAL_CONFIG.maxSliceOffset },
+      uMaxChromaticOffset: { value: GLITCH_INTENSITY.maxChromaticOffset },
+      uMaxSliceOffset: { value: GLITCH_INTENSITY.maxSliceOffset },
       uSliceCount: { value: DAILY_GLITCH_REVEAL_CONFIG.sliceCount },
-      uEdgeGlowStrength: { value: DAILY_GLITCH_REVEAL_CONFIG.edgeGlowStrength },
-      uNoiseStrength: { value: DAILY_GLITCH_REVEAL_CONFIG.noiseStrength },
+      uBootGlow: { value: 0 },
+      uEdgeGlowStrength: { value: DAILY_GLITCH_REVEAL_CONFIG.bootBorderStrength },
+      uScanlineOpacity: { value: DAILY_GLITCH_REVEAL_CONFIG.scanlineOpacity },
+      uNoiseBlockOpacity: { value: DAILY_GLITCH_REVEAL_CONFIG.noiseBlockOpacity },
       uAccentColor: { value: accentColor.clone() },
       uCylinderAmount: { value: 0 },
       uCenterTheta: { value: 0 },
@@ -352,9 +379,9 @@ function DailyPhotoPlane({
 
   useEffect(() => {
     entryCompleteRef.current = reducedMotion;
-    uniforms.uReveal.value = entryCompleteRef.current ? 1 : 0;
     uniforms.uEntryProgress.value = entryCompleteRef.current ? 1 : 0;
     uniforms.uGlitchStrength.value = 0;
+    uniforms.uBootGlow.value = 0;
   }, [reducedMotion, uniforms]);
 
   const emitHover = (event: ThreeEvent<PointerEvent>, active: boolean) => {
@@ -400,15 +427,28 @@ function DailyPhotoPlane({
       ? 0
       : clamp01((curveStrength - 0.12) / Math.max(config.maxCurve * 0.96, 0.001));
     const hoverAmount = THREE.MathUtils.damp(hoverAmountRef.current, hoverTargetRef.current, 9, delta);
+    const elapsedFromEntry = state.clock.elapsedTime - entryFx.entryDelay;
+    const entryDuration = DAILY_GLITCH_REVEAL_CONFIG.entryDuration;
     const revealProgress =
       reducedMotion
         ? 1
-        : clamp01((state.clock.elapsedTime - entryFx.entryDelay) / config.entryDuration);
+        : clamp01(elapsedFromEntry / entryDuration);
     const reveal = reducedMotion ? 1 : smooth01(revealProgress);
+    const bootProgress = reducedMotion ? 1 : clamp01(elapsedFromEntry / entryFx.bootDuration);
+    const bootGlow =
+      reducedMotion || !DAILY_GLITCH_REVEAL_CONFIG.enabled
+        ? 0
+        : Math.sin(bootProgress * Math.PI) * DAILY_GLITCH_REVEAL_CONFIG.bootBorderStrength;
+    const burstWidth = DAILY_GLITCH_REVEAL_CONFIG.glitchBurstDuration / entryDuration;
+    const burstA = pulse(revealProgress, entryFx.glitchBurstA, burstWidth);
+    const burstB =
+      DAILY_GLITCH_REVEAL_CONFIG.glitchBurstCount > 1
+        ? pulse(revealProgress, entryFx.glitchBurstB, burstWidth * 0.78) * 0.62
+        : 0;
     const glitchStrength =
       reducedMotion || !DAILY_GLITCH_REVEAL_CONFIG.enabled || (DAILY_GLITCH_REVEAL_CONFIG.reduceMotion && reducedMotion)
         ? 0
-        : glitchEnvelope(state.clock.elapsedTime, entryFx.glitchStart, entryFx.glitchDuration) * entryFx.glitchStrength;
+        : Math.max(burstA, burstB) * entryFx.glitchStrength;
     const farFadeStart = maxWallHalfHeight + config.planeHeight * 0.55;
     const farFadeBand = Math.max(config.gapY * 1.35, config.planeHeight);
     const farFade = smooth01(
@@ -428,14 +468,14 @@ function DailyPhotoPlane({
 
     shaderMaterial.uniforms.uTime.value = state.clock.elapsedTime;
     if (!entryCompleteRef.current) {
-      shaderMaterial.uniforms.uReveal.value = reveal;
       shaderMaterial.uniforms.uEntryProgress.value = reveal;
       shaderMaterial.uniforms.uGlitchStrength.value = glitchStrength;
-      if (revealProgress >= 1 && state.clock.elapsedTime > entryFx.glitchStart + entryFx.glitchDuration) {
+      shaderMaterial.uniforms.uBootGlow.value = bootGlow;
+      if (revealProgress >= 1 && elapsedFromEntry > entryDuration + DAILY_GLITCH_REVEAL_CONFIG.settleDuration) {
         entryCompleteRef.current = true;
-        shaderMaterial.uniforms.uReveal.value = 1;
         shaderMaterial.uniforms.uEntryProgress.value = 1;
         shaderMaterial.uniforms.uGlitchStrength.value = 0;
+        shaderMaterial.uniforms.uBootGlow.value = 0;
       }
     }
     shaderMaterial.uniforms.uVelocity.value = shaderVelocity;
@@ -451,6 +491,16 @@ function DailyPhotoPlane({
     shaderMaterial.uniforms.uCylinderCenterZ.value = cylinderCenterZ;
     shaderMaterial.uniforms.uCylinderMaxSag.value = cylinderMaxSag;
     shaderMaterial.uniforms.uLift.value = lift;
+
+    if (DEBUG_DAILY_GLITCH) {
+      group.userData.dailyGlitch = {
+        seed: entryFx.seed,
+        entryDelay: entryFx.entryDelay,
+        entryProgress: revealProgress,
+        bootGlow,
+        glitchStrength,
+      };
+    }
   });
 
   return (

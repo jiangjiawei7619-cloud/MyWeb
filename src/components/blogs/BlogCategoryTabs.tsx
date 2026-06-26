@@ -6,10 +6,10 @@ type BlogCategoryTabsProps = {
 };
 
 const BLOG_TABS: Array<{ id: BlogCategory; label: string }> = [
-  { id: 'tech', label: 'Tech Notes' },
+  { id: 'daily', label: 'Daily' },
   { id: 'leetcode', label: 'LeetCode' },
   { id: 'github', label: 'GitHub' },
-  { id: 'daily', label: 'Daily' },
+  { id: 'tech', label: 'Tech Notes' },
 ];
 
 export default function BlogCategoryTabs({ selectedCategory, onSelect }: BlogCategoryTabsProps) {

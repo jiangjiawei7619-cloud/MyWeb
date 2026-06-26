@@ -29,7 +29,7 @@ function BlogReveal({
 export default function LogsSection() {
   const featuredNote = useMemo(() => techNotes.find((note) => note.featured) ?? techNotes[0], []);
   const accordionNotes = useMemo(() => techNotes.filter((note) => note.id !== featuredNote?.id), [featuredNote]);
-  const [selectedCategory, setSelectedCategory] = useState<BlogCategory>('tech');
+  const [selectedCategory, setSelectedCategory] = useState<BlogCategory>('daily');
   const [expandedFeatured, setExpandedFeatured] = useState(true);
   const [expandedTechNoteIds, setExpandedTechNoteIds] = useState<string[]>(() =>
     accordionNotes[0] ? [accordionNotes[0].id] : [],

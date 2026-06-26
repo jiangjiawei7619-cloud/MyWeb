@@ -1,7 +1,10 @@
 import { memo, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { DailyPhoto } from '@/components/blogs/daily/dailyPhotoWallData';
+import {
+  DAILY_GLITCH_REVEAL_CONFIG,
+  type DailyPhoto,
+} from '@/components/blogs/daily/dailyPhotoWallData';
 
 type RuntimeWallConfig = {
   columns: number;
@@ -45,6 +48,14 @@ type DailyPhotoPlaneProps = {
   onSelect: (photo: DailyPhoto) => void;
 };
 
+type PhotoEntryFx = {
+  seed: number;
+  entryDelay: number;
+  glitchStart: number;
+  glitchDuration: number;
+  glitchStrength: number;
+};
+
 const ACCENT_COLORS: Record<NonNullable<DailyPhoto['accent']>, string> = {
   red: '#ff5357',
   cyan: '#41f4ff',
@@ -85,6 +96,7 @@ const fragmentShader = `
   uniform sampler2D uTexture;
   uniform float uTime;
   uniform float uReveal;
+  uniform float uEntryProgress;
   uniform float uVelocity;
   uniform float uHover;
   uniform float uGlitchStrength;
@@ -92,6 +104,12 @@ const fragmentShader = `
   uniform float uImageAspect;
   uniform float uPlaneAspect;
   uniform float uFarFade;
+  uniform float uSeed;
+  uniform float uMaxChromaticOffset;
+  uniform float uMaxSliceOffset;
+  uniform float uSliceCount;
+  uniform float uEdgeGlowStrength;
+  uniform float uNoiseStrength;
   uniform vec3 uAccentColor;
 
   varying vec2 vUv;
@@ -111,23 +129,29 @@ const fragmentShader = `
     return edge.x * edge.y;
   }
 
+  float hash11(float value) {
+    return fract(sin(value * 127.1) * 43758.5453123);
+  }
+
   void main() {
-    float entryNoise = sin(vUv.y * 64.0 + uTime * 18.0) * 0.015;
-    float revealLine = smoothstep(-0.12, 1.02, uReveal - vUv.y * 0.12 + entryNoise);
-    float reveal = clamp(revealLine * uReveal, 0.0, 1.0);
+    float reveal = smoothstep(0.0, 1.0, uEntryProgress);
 
     vec2 uv = coverUv(vUv);
     float velocity = clamp(uVelocity, -1.0, 1.0);
     float absVelocity = abs(velocity);
+    float glitch = clamp(uGlitchStrength, 0.0, 1.0);
 
     uv.x += sin(vUv.y * 12.0 + uTime * 1.2) * velocity * 0.0035 * uDistortionStrength;
     uv.y += sin(vUv.x * 8.0 + uTime) * absVelocity * 0.0026 * uDistortionStrength;
 
-    float sliceGate = step(0.965, fract(sin(floor(vUv.y * 18.0) * 43.17 + uTime * 11.0) * 43758.5453));
-    float entryGlitch = (1.0 - uReveal) * uGlitchStrength;
-    uv.x += sliceGate * (entryGlitch + absVelocity * 0.08) * 0.012;
+    float sliceIndex = floor(vUv.y * uSliceCount);
+    float sliceNoise = hash11(sliceIndex + uSeed * 31.7);
+    float sliceGate = step(0.8, sliceNoise) * glitch;
+    float sliceDirection = mix(-1.0, 1.0, step(0.5, hash11(sliceIndex + uSeed * 67.0)));
+    uv.x += sliceGate * sliceDirection * uMaxSliceOffset;
 
-    float chroma = ((1.0 - uReveal) * 0.006 + absVelocity * 0.0014 + uHover * 0.0015) * uDistortionStrength;
+    float entryChroma = glitch * uMaxChromaticOffset;
+    float chroma = (entryChroma + absVelocity * 0.0014 + uHover * 0.0015) * uDistortionStrength;
     vec4 base = texture2D(uTexture, uv);
     vec4 red = texture2D(uTexture, uv + vec2(chroma, 0.0));
     vec4 blue = texture2D(uTexture, uv - vec2(chroma, 0.0));
@@ -136,10 +160,15 @@ const fragmentShader = `
     float scanline = 1.0 - (0.045 + absVelocity * 0.025) * (0.5 + 0.5 * sin(vUv.y * 760.0));
     float vignette = mix(0.68, 1.0, edgeMask(vUv));
     color *= scanline * vignette;
+    color *= mix(0.86, 1.0, reveal);
 
-    vec3 accent = uAccentColor * (0.06 + uHover * 0.12 + (1.0 - uReveal) * 0.08);
+    float grain = hash11(floor(vUv.x * 96.0) + floor(vUv.y * 72.0) * 17.0 + uSeed * 23.0 + floor(uTime * 10.0));
+    color += (grain - 0.5) * uNoiseStrength * glitch;
+
+    vec3 accent = uAccentColor * (0.045 + uHover * 0.12 + glitch * 0.05);
     float borderGlow = 1.0 - smoothstep(0.0, 0.055, min(min(vUv.x, 1.0 - vUv.x), min(vUv.y, 1.0 - vUv.y)));
-    color += accent + uAccentColor * borderGlow * (0.08 + uHover * 0.18);
+    float bootGlow = glitch * uEdgeGlowStrength;
+    color += accent + uAccentColor * borderGlow * (0.08 + uHover * 0.18 + bootGlow);
 
     float alpha = reveal * uFarFade;
     alpha *= 0.82 + uHover * 0.18;
@@ -155,6 +184,22 @@ function clamp01(value: number) {
 function smooth01(value: number) {
   const t = clamp01(value);
   return t * t * (3 - 2 * t);
+}
+
+function glitchEnvelope(time: number, start: number, duration: number) {
+  const local = (time - start) / duration;
+  if (local < 0 || local > 1) return 0;
+  return Math.sin(local * Math.PI);
+}
+
+function hashPhotoId(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return (hash >>> 0) / 4294967295;
 }
 
 function getTextureAspect(texture: THREE.Texture, fallback = 1.57) {
@@ -186,6 +231,7 @@ function DailyPhotoPlane({
   const materialRef = useRef<THREE.ShaderMaterial | null>(null);
   const hoverTargetRef = useRef(0);
   const hoverAmountRef = useRef(0);
+  const entryCompleteRef = useRef(false);
 
   const accentColor = useMemo(
     () => new THREE.Color(ACCENT_COLORS[photo.accent ?? 'cyan']),
@@ -202,11 +248,41 @@ function DailyPhotoPlane({
     return { x, baseY, depth };
   }, [config.columns, config.gapX, config.gapY, index, sourceIndex, totalRows]);
 
+  const entryFx = useMemo<PhotoEntryFx>(() => {
+    const row = Math.floor(index / config.columns);
+    const column = index % config.columns;
+    const centerColumn = (config.columns - 1) * 0.5;
+    const seed = hashPhotoId(`${photo.id}:${sourceIndex}`);
+    const entryDelay =
+      row * config.entryStagger +
+      Math.abs(column - centerColumn) * 0.018 +
+      seed * DAILY_GLITCH_REVEAL_CONFIG.perPhotoDelayJitter;
+    const glitchDuration = THREE.MathUtils.lerp(
+      DAILY_GLITCH_REVEAL_CONFIG.glitchDurationMin,
+      DAILY_GLITCH_REVEAL_CONFIG.glitchDurationMax,
+      hashPhotoId(`${photo.id}:duration:${index}`),
+    );
+    const glitchStrength = THREE.MathUtils.lerp(
+      0.12,
+      DAILY_GLITCH_REVEAL_CONFIG.maxGlitchStrength,
+      hashPhotoId(`${photo.id}:strength:${sourceIndex}`),
+    );
+
+    return {
+      seed,
+      entryDelay,
+      glitchStart: entryDelay + 0.1 + hashPhotoId(`${photo.id}:start:${index}`) * 0.16,
+      glitchDuration,
+      glitchStrength,
+    };
+  }, [config.columns, config.entryStagger, index, photo.id, sourceIndex]);
+
   const uniforms = useMemo(
     () => ({
       uTexture: { value: texture },
       uTime: { value: 0 },
       uReveal: { value: reducedMotion ? 1 : 0 },
+      uEntryProgress: { value: reducedMotion ? 1 : 0 },
       uVelocity: { value: 0 },
       uHover: { value: 0 },
       uGlitchStrength: { value: 0 },
@@ -214,6 +290,12 @@ function DailyPhotoPlane({
       uImageAspect: { value: photo.aspectRatio ?? getTextureAspect(texture) },
       uPlaneAspect: { value: config.planeWidth / config.planeHeight },
       uFarFade: { value: 1 },
+      uSeed: { value: entryFx.seed },
+      uMaxChromaticOffset: { value: DAILY_GLITCH_REVEAL_CONFIG.maxChromaticOffset },
+      uMaxSliceOffset: { value: DAILY_GLITCH_REVEAL_CONFIG.maxSliceOffset },
+      uSliceCount: { value: DAILY_GLITCH_REVEAL_CONFIG.sliceCount },
+      uEdgeGlowStrength: { value: DAILY_GLITCH_REVEAL_CONFIG.edgeGlowStrength },
+      uNoiseStrength: { value: DAILY_GLITCH_REVEAL_CONFIG.noiseStrength },
       uAccentColor: { value: accentColor.clone() },
       uCylinderAmount: { value: 0 },
       uCenterTheta: { value: 0 },
@@ -231,6 +313,7 @@ function DailyPhotoPlane({
       config.maxCurve,
       config.shaderDistortionStrength,
       enableShaderDistortion,
+      entryFx.seed,
       maxWallHalfHeight,
       photo.aspectRatio,
       reducedMotion,
@@ -266,6 +349,13 @@ function DailyPhotoPlane({
   useEffect(() => {
     uniforms.uAccentColor.value.copy(accentColor);
   }, [accentColor, uniforms]);
+
+  useEffect(() => {
+    entryCompleteRef.current = reducedMotion;
+    uniforms.uReveal.value = entryCompleteRef.current ? 1 : 0;
+    uniforms.uEntryProgress.value = entryCompleteRef.current ? 1 : 0;
+    uniforms.uGlitchStrength.value = 0;
+  }, [reducedMotion, uniforms]);
 
   const emitHover = (event: ThreeEvent<PointerEvent>, active: boolean) => {
     event.stopPropagation();
@@ -310,8 +400,15 @@ function DailyPhotoPlane({
       ? 0
       : clamp01((curveStrength - 0.12) / Math.max(config.maxCurve * 0.96, 0.001));
     const hoverAmount = THREE.MathUtils.damp(hoverAmountRef.current, hoverTargetRef.current, 9, delta);
-    const revealDelay = sourceIndex * config.entryStagger;
-    const reveal = reducedMotion ? 1 : smooth01((state.clock.elapsedTime - revealDelay) / config.entryDuration);
+    const revealProgress =
+      reducedMotion
+        ? 1
+        : clamp01((state.clock.elapsedTime - entryFx.entryDelay) / config.entryDuration);
+    const reveal = reducedMotion ? 1 : smooth01(revealProgress);
+    const glitchStrength =
+      reducedMotion || !DAILY_GLITCH_REVEAL_CONFIG.enabled || (DAILY_GLITCH_REVEAL_CONFIG.reduceMotion && reducedMotion)
+        ? 0
+        : glitchEnvelope(state.clock.elapsedTime, entryFx.glitchStart, entryFx.glitchDuration) * entryFx.glitchStrength;
     const farFadeStart = maxWallHalfHeight + config.planeHeight * 0.55;
     const farFadeBand = Math.max(config.gapY * 1.35, config.planeHeight);
     const farFade = smooth01(
@@ -330,10 +427,19 @@ function DailyPhotoPlane({
     group.scale.setScalar(1 + hoverAmount * 0.035);
 
     shaderMaterial.uniforms.uTime.value = state.clock.elapsedTime;
-    shaderMaterial.uniforms.uReveal.value = reveal;
+    if (!entryCompleteRef.current) {
+      shaderMaterial.uniforms.uReveal.value = reveal;
+      shaderMaterial.uniforms.uEntryProgress.value = reveal;
+      shaderMaterial.uniforms.uGlitchStrength.value = glitchStrength;
+      if (revealProgress >= 1 && state.clock.elapsedTime > entryFx.glitchStart + entryFx.glitchDuration) {
+        entryCompleteRef.current = true;
+        shaderMaterial.uniforms.uReveal.value = 1;
+        shaderMaterial.uniforms.uEntryProgress.value = 1;
+        shaderMaterial.uniforms.uGlitchStrength.value = 0;
+      }
+    }
     shaderMaterial.uniforms.uVelocity.value = shaderVelocity;
     shaderMaterial.uniforms.uHover.value = hoverAmount;
-    shaderMaterial.uniforms.uGlitchStrength.value = (1 - reveal) * 0.42 + speed * 0.08;
     shaderMaterial.uniforms.uDistortionStrength.value = enableShaderDistortion
       ? config.shaderDistortionStrength
       : 0;

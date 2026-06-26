@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { ActivePage } from '@/lib/types';
 import GlitchTitle from '@/components/ui/GlitchTitle';
@@ -20,7 +20,10 @@ export default function TopAppBar({
   const [fps, setFps] = useState(62);
   const [frameTime, setFrameTime] = useState(5.8);
   const [isChanging, setIsChanging] = useState(false);
+  const [aboutBrandIntroKey, setAboutBrandIntroKey] = useState(0);
+  const [brandReturnIntroActive, setBrandReturnIntroActive] = useState(false);
   const [hoverTriggers, setHoverTriggers] = useState<Record<string, number>>({});
+  const previousPageRef = useRef<ActivePage>(currentPage);
 
   const handleHoverItem = (key: string) => {
     setHoverTriggers((prev) => ({
@@ -33,6 +36,27 @@ export default function TopAppBar({
     setIsChanging(true);
     const timeout = setTimeout(() => setIsChanging(false), 350);
     return () => clearTimeout(timeout);
+  }, [currentPage]);
+
+  useEffect(() => {
+    const previousPage = previousPageRef.current;
+    const isEnteringAbout = previousPage !== 'ABOUT' && currentPage === 'ABOUT';
+    const isLeavingAbout = previousPage === 'ABOUT' && currentPage !== 'ABOUT';
+    previousPageRef.current = currentPage;
+
+    if (isEnteringAbout) {
+      setAboutBrandIntroKey((key) => key + 1);
+    }
+
+    setBrandReturnIntroActive(isLeavingAbout);
+
+    if (!isLeavingAbout) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      setBrandReturnIntroActive(false);
+    }, 2800);
+
+    return () => window.clearTimeout(timeout);
   }, [currentPage]);
 
   // Fluctuating FPS to look super realistic and advanced!
@@ -48,14 +72,30 @@ export default function TopAppBar({
     onPageChange(page);
   };
 
+  const isAboutPage = currentPage === 'ABOUT';
+  const brandNameIntroClass = isAboutPage
+    ? 'about-top-brand-cut about-top-brand-cut--name'
+    : brandReturnIntroActive
+      ? 'top-brand-return-cut top-brand-return-cut--name'
+      : '';
+  const brandSubtitleIntroClass = isAboutPage
+    ? 'about-top-brand-subtitle'
+    : brandReturnIntroActive
+      ? 'top-brand-return-subtitle'
+      : '';
+  const brandNameClass = isAboutPage
+    ? 'text-[1.6875rem] md:text-[2.025rem] font-extrabold text-[#ff5357] tracking-[-0.05em] uppercase'
+    : 'text-3xl md:text-4xl font-extrabold text-[#ff5357] tracking-[-0.05em] uppercase';
+
   return (
     <header className="fixed top-0 left-0 w-full p-6 md:p-10 z-[60] flex flex-col gap-4 md:block pointer-events-none select-none">
       {/* Brand & Subtitle */}
       <div className="flex flex-col items-start gap-1 pointer-events-auto md:max-w-[38vw]">
         <h1
+          key={isAboutPage ? `about-brand-name-${aboutBrandIntroKey}` : 'brand-name-default'}
           onClick={() => handleNavClick('EXPLORE')}
           onMouseEnter={() => handleHoverItem('LOGO')}
-          className="cursor-pointer select-none"
+          className={`cursor-pointer select-none ${brandNameIntroClass}`}
         >
           <GlitchTitle
             english="Javin Jiang"
@@ -65,10 +105,13 @@ export default function TopAppBar({
             trigger={hoverTriggers['LOGO'] || false}
             charSlotEm={0.82}
             spaceSlotEm={0.28}
-            className="text-3xl md:text-4xl font-extrabold text-[#ff5357] tracking-[-0.05em] uppercase"
+            className={brandNameClass}
           />
         </h1>
-        <div className="hidden md:flex flex-col gap-0.5 text-[#ff5357]/70 font-mono text-[10px] mt-2 tracking-widest leading-normal uppercase">
+        <div
+          key={isAboutPage ? `about-brand-subtitle-${aboutBrandIntroKey}` : 'brand-subtitle-default'}
+          className={`hidden md:flex flex-col gap-0.5 text-[#ff5357]/70 font-mono text-[10px] mt-2 tracking-widest leading-normal uppercase ${brandSubtitleIntroClass}`}
+        >
           <span>クリエイティブテクノロジスト</span>
           <span>CREATIVE DEVELOPMENT & EXPERIENCE DESIGNER</span>
           <span>RAISED ON '90S CLASSICS</span>

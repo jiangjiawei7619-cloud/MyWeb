@@ -42,6 +42,22 @@ export const WALL_CONFIG = {
   entryDuration: 0.86,
 } as const;
 
+export const DAILY_GLITCH_REVEAL_CONFIG = {
+  enabled: true,
+  preserveOriginalEntry: true,
+  disableGlobalVerticalReveal: true,
+  glitchDurationMin: 0.1,
+  glitchDurationMax: 0.22,
+  maxChromaticOffset: 0.0015,
+  maxSliceOffset: 0.008,
+  sliceCount: 7,
+  maxGlitchStrength: 0.22,
+  edgeGlowStrength: 0.18,
+  noiseStrength: 0.018,
+  perPhotoDelayJitter: 0.12,
+  reduceMotion: true,
+} as const;
+
 export const PERFORMANCE_CONFIG = {
   maxDpr: 1.5,
   mobileMaxPhotos: 18,

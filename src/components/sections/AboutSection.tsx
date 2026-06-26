@@ -16,8 +16,8 @@ const socialLinkActive =
   `${socialLinkClass} text-[#ff5357] decoration-[#ff5357]/80 hover:text-[#ffb3af] hover:decoration-[#ffb3af] cursor-pointer`;
 const socialLinkDisabled =
   `${socialLinkClass} text-[#ffb3af]/40 decoration-[#ffb3af]/25 cursor-default pointer-events-none`;
-const ABOUT_SOCIAL_INTRO_MS = 2020;
-const aboutSocialIntroClass = 'about-heading-cut about-heading-cut--title';
+const ABOUT_SOCIAL_INTRO_MS = 2652;
+const aboutSocialIntroClass = 'about-heading-cut about-social-intro-cut';
 
 export default function AboutSection() {
   const [titleHoverTrigger, setTitleHoverTrigger] = useState(0);
@@ -72,7 +72,7 @@ export default function AboutSection() {
               key={index}
               as="p"
               text={paragraph}
-              delayBaseMs={500}
+              delayBaseMs={700}
               className="hover:text-white transition-colors duration-300"
             />
             ))}

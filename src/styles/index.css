@@ -1474,6 +1474,15 @@ body.blogs-github-page .blogs-hub {
   transform: translate(var(--blogs-leetcode-shift-x), var(--blogs-leetcode-shift-y));
 }
 
+.blogs-content-shell--daily {
+  width: 100%;
+  margin: 0;
+}
+
+.blogs-content-shell--daily > .grid {
+  display: block;
+}
+
 .blogs-grid-texture {
   position: absolute;
   inset: -1.5rem -1rem;
@@ -4303,6 +4312,444 @@ button.cyber-heatmap-cell {
 .daily-timeline-arrow--open {
   transform: rotate(90deg);
   color: #ffdad8;
+}
+
+.daily-photo-wall {
+  position: fixed;
+  inset: 0;
+  z-index: 11;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  isolation: isolate;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.daily-photo-wall::before,
+.daily-photo-wall::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.daily-photo-wall::before {
+  opacity: 0.18;
+  background:
+    linear-gradient(to right, rgba(0, 238, 252, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 83, 87, 0.08) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+}
+
+.daily-photo-wall::after {
+  content: none;
+}
+
+.daily-photo-wall__backdrop,
+.daily-photo-wall__scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.daily-photo-wall__backdrop {
+  opacity: 0.42;
+  background:
+    linear-gradient(90deg, rgba(255, 83, 87, 0.07), transparent 22%, rgba(0, 238, 252, 0.055) 74%, transparent),
+    linear-gradient(180deg, transparent 0%, rgba(0, 238, 252, 0.035) 45%, transparent 86%);
+}
+
+.daily-photo-wall__scanlines {
+  z-index: 4;
+  opacity: 0.18;
+  background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(255, 255, 255, 0.08) 4px 5px);
+  mix-blend-mode: screen;
+}
+
+.daily-photo-wall__stage {
+  position: relative;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+}
+
+.daily-photo-wall__canvas {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.daily-photo-wall__canvas:active {
+  cursor: grabbing;
+}
+
+.daily-photo-wall-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 1rem;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.daily-photo-wall-hud__status,
+.daily-photo-wall-hud__debug {
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+  padding: 0.45rem 0.58rem;
+  border: 1px solid rgba(0, 238, 252, 0.2);
+  border-radius: 6px;
+  background: rgba(2, 6, 9, 0.56);
+  box-shadow: inset 0 0 18px rgba(0, 238, 252, 0.04);
+  backdrop-filter: blur(8px);
+}
+
+.daily-photo-wall-hud__status span,
+.daily-photo-wall-hud__debug span {
+  color: rgba(156, 248, 255, 0.72);
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.daily-photo-wall-hud__status {
+  align-items: flex-end;
+  border-color: rgba(255, 83, 87, 0.2);
+}
+
+.daily-photo-wall-hud__debug {
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  color: rgba(255, 218, 216, 0.78);
+}
+
+.daily-photo-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 12;
+  max-width: min(17rem, calc(100% - 2rem));
+  padding: 0.52rem 0.62rem;
+  pointer-events: none;
+  border: 1px solid rgba(0, 238, 252, 0.36);
+  border-radius: 6px;
+  background: rgba(2, 6, 9, 0.88);
+  box-shadow: 0 0 18px rgba(0, 238, 252, 0.16);
+  color: #ffdad8;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.daily-photo-tooltip span,
+.daily-photo-tooltip strong {
+  display: block;
+}
+
+.daily-photo-tooltip span {
+  margin-bottom: 0.18rem;
+  color: rgba(156, 248, 255, 0.72);
+  font-size: 0.58rem;
+  font-weight: 800;
+}
+
+.daily-photo-tooltip strong {
+  overflow-wrap: anywhere;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.daily-photo-tooltip--red {
+  border-color: rgba(255, 83, 87, 0.44);
+  box-shadow: 0 0 18px rgba(255, 83, 87, 0.16);
+}
+
+.daily-photo-tooltip--violet {
+  border-color: rgba(166, 108, 255, 0.44);
+  box-shadow: 0 0 18px rgba(166, 108, 255, 0.16);
+}
+
+.daily-photo-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.daily-photo-overlay__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0 1px, transparent 1px 6px),
+    rgba(0, 0, 0, 0.74);
+  cursor: pointer;
+}
+
+.daily-photo-overlay__panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.85fr);
+  width: min(920px, 100%);
+  min-height: min(480px, calc(100vh - 9rem));
+  overflow: hidden;
+  border: 1px solid rgba(255, 83, 87, 0.42);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(5, 6, 10, 0.96), rgba(9, 3, 8, 0.94));
+  box-shadow: 0 0 36px rgba(255, 83, 87, 0.2), inset 0 0 30px rgba(0, 238, 252, 0.035);
+}
+
+.daily-photo-overlay__close {
+  position: absolute;
+  top: 0.72rem;
+  right: 0.72rem;
+  z-index: 2;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 1px solid rgba(255, 83, 87, 0.42);
+  border-radius: 999px;
+  background: rgba(6, 4, 8, 0.86);
+  color: #ffdad8;
+  box-shadow: 0 0 16px rgba(255, 83, 87, 0.15);
+}
+
+.daily-photo-overlay__close:hover {
+  border-color: rgba(255, 218, 216, 0.72);
+  color: #fff;
+}
+
+.daily-photo-overlay__media {
+  position: relative;
+  min-height: 22rem;
+  overflow: hidden;
+  border-right: 1px solid rgba(0, 238, 252, 0.16);
+  background: #020507;
+}
+
+.daily-photo-overlay__media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 83, 87, 0.14), transparent 30%, rgba(0, 238, 252, 0.12)),
+    repeating-linear-gradient(0deg, transparent 0 5px, rgba(255, 255, 255, 0.055) 5px 6px);
+  mix-blend-mode: screen;
+}
+
+.daily-photo-overlay__media img {
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+  object-fit: cover;
+  filter: saturate(1.12) contrast(1.08);
+}
+
+.daily-photo-overlay__offline {
+  display: grid;
+  height: 100%;
+  min-height: 22rem;
+  place-items: center;
+  color: #ff5357;
+  font-family: var(--font-mono);
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.daily-photo-overlay__offline span,
+.daily-photo-overlay__offline small {
+  display: block;
+}
+
+.daily-photo-overlay__offline small {
+  color: rgba(156, 248, 255, 0.72);
+  font-size: 0.7rem;
+}
+
+.daily-photo-overlay__content {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.72rem;
+  padding: 2.4rem 1.25rem 1.15rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+.daily-photo-overlay__date {
+  color: #41f4ff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.daily-photo-overlay__content h3 {
+  margin: 0;
+  color: #ffdad8;
+  font-size: clamp(1.2rem, 2.2vw, 1.85rem);
+  font-weight: 900;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.daily-photo-overlay__content p {
+  margin: 0;
+  color: rgba(255, 218, 216, 0.72);
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+
+.daily-photo-overlay__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+.daily-photo-overlay__tags span {
+  border: 1px solid rgba(255, 83, 87, 0.26);
+  border-radius: 999px;
+  padding: 0.24rem 0.48rem;
+  color: rgba(156, 248, 255, 0.78);
+  font-size: 0.58rem;
+  font-weight: 900;
+}
+
+.daily-photo-wall-fallback {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.65rem;
+  height: 100%;
+  min-height: 500px;
+  padding: 4.5rem 1rem 1rem;
+  overflow: auto;
+}
+
+.daily-photo-wall-fallback__tile {
+  position: relative;
+  min-height: 8.8rem;
+  overflow: hidden;
+  border: 1px solid rgba(0, 238, 252, 0.24);
+  border-radius: 6px;
+  background: #020507;
+  text-align: left;
+}
+
+.daily-photo-wall-fallback__tile:hover {
+  border-color: rgba(255, 218, 216, 0.64);
+  box-shadow: 0 0 18px rgba(255, 83, 87, 0.15);
+}
+
+.daily-photo-wall-fallback__image {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  filter: saturate(1.08) contrast(1.08);
+}
+
+.daily-photo-wall-fallback__meta {
+  position: absolute;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  left: 0.45rem;
+  padding: 0.45rem;
+  border: 1px solid rgba(0, 238, 252, 0.18);
+  border-radius: 5px;
+  background: rgba(2, 6, 9, 0.78);
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.daily-photo-wall-fallback__meta span,
+.daily-photo-wall-fallback__meta strong {
+  display: block;
+}
+
+.daily-photo-wall-fallback__meta span {
+  color: rgba(156, 248, 255, 0.72);
+  font-size: 0.56rem;
+  font-weight: 900;
+}
+
+.daily-photo-wall-fallback__meta strong {
+  color: #ffdad8;
+  font-size: 0.68rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .daily-photo-wall-fallback {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .daily-photo-wall {
+    min-height: 100vh;
+  }
+
+  .daily-photo-wall__stage {
+    height: 100vh;
+    min-height: 100vh;
+  }
+
+  .daily-photo-wall-hud {
+    padding: 0.72rem;
+  }
+
+  .daily-photo-wall-hud__status {
+    display: none;
+  }
+
+  .daily-photo-overlay__panel {
+    grid-template-columns: 1fr;
+    max-height: calc(100vh - 7.5rem);
+    overflow-y: auto;
+  }
+
+  .daily-photo-overlay__media,
+  .daily-photo-overlay__media img,
+  .daily-photo-overlay__offline {
+    min-height: 17rem;
+  }
+
+  .daily-photo-overlay__media {
+    border-right: 0;
+    border-bottom: 1px solid rgba(0, 238, 252, 0.16);
+  }
+
+  .daily-photo-wall-fallback {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-top: 4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily-photo-wall__scanlines {
+    opacity: 0.1;
+  }
 }
 
 .tech-note-card {

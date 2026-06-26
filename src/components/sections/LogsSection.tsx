@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import BlogCategoryTabs, { type BlogCategory } from '@/components/blogs/BlogCategoryTabs';
-import DailyTimeline from '@/components/blogs/DailyTimeline';
+import DailyPhotoWall from '@/components/blogs/daily/DailyPhotoWall';
 import FeaturedTechNote from '@/components/blogs/FeaturedTechNote';
 import GitHubPanel from '@/components/github/GitHubPanel';
 import LeetCodePanel from '@/components/leetcode/LeetCodePanel';
 import TechNoteAccordion from '@/components/blogs/TechNoteAccordion';
 import {
-  dailyLogs,
   techNotes,
 } from '@/data/blogs';
 import { getGitHubStats } from '@/data/github';
@@ -35,7 +34,6 @@ export default function LogsSection() {
   const [expandedTechNoteIds, setExpandedTechNoteIds] = useState<string[]>(() =>
     accordionNotes[0] ? [accordionNotes[0].id] : [],
   );
-  const [expandedDailyLogIds, setExpandedDailyLogIds] = useState<string[]>([]);
 
   const leetcodeStats = useMemo(() => getLeetCodeStats(), []);
   const githubStats = useMemo(() => getGitHubStats(), []);
@@ -55,13 +53,6 @@ export default function LogsSection() {
     playClick(980, 0.025);
     setExpandedTechNoteIds((current) =>
       current.includes(id) ? current.filter((noteId) => noteId !== id) : [...current, id],
-    );
-  };
-
-  const toggleDailyLog = (id: string) => {
-    playClick(980, 0.025);
-    setExpandedDailyLogIds((current) =>
-      current.includes(id) ? current.filter((logId) => logId !== id) : [...current, id],
     );
   };
 
@@ -85,7 +76,11 @@ export default function LogsSection() {
 
       <BlogCategoryTabs selectedCategory={selectedCategory} onSelect={handleSelectCategory} />
 
-      <div className={`blogs-content-shell space-y-4 md:space-y-5 ${showLeetcode ? 'blogs-content-shell--leetcode' : ''}`}>
+      <div
+        className={`blogs-content-shell space-y-4 md:space-y-5 ${showLeetcode ? 'blogs-content-shell--leetcode' : ''} ${
+          showDaily ? 'blogs-content-shell--daily' : ''
+        }`}
+      >
         {showFeatured && featuredNote && (
           <BlogReveal key={`featured-${selectedCategory}`}>
             <FeaturedTechNote note={featuredNote} expanded={expandedFeatured} onToggle={toggleFeatured} />
@@ -111,11 +106,7 @@ export default function LogsSection() {
           <div className="grid grid-cols-1 gap-4 md:gap-5">
             {showDaily && (
               <BlogReveal key="daily">
-                <DailyTimeline
-                  logs={dailyLogs}
-                  expandedDailyLogIds={expandedDailyLogIds}
-                  onToggleLog={toggleDailyLog}
-                />
+                <DailyPhotoWall />
               </BlogReveal>
             )}
 

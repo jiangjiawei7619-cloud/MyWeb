@@ -1,18 +1,99 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import {
   startAmbientBackground,
   stopAmbientBackground,
   getAmbientStatus,
   subscribeAmbientStatus,
 } from '@/utils/audio';
+import {
+  ABOUT_SOCIAL_LINKS,
+  ABOUT_WECHAT_QR_SRC,
+} from '@/lib/about';
 
 interface FooterShellProps {
   onPrev?: () => void;
   onNext?: () => void;
   hidePageNav?: boolean;
+  showAboutSocial?: boolean;
 }
 
-export default function FooterShell({ onPrev, onNext, hidePageNav = false }: FooterShellProps) {
+const QR_PIXEL_COUNT = 100;
+const QR_PIXEL_DELAYS = Array.from({ length: QR_PIXEL_COUNT }, (_, index) => {
+  const row = Math.floor(index / 10);
+  const col = index % 10;
+  const diagonal = (row + col) / 18;
+  const noise = ((index * 37) % QR_PIXEL_COUNT) / (QR_PIXEL_COUNT - 1);
+  const rank = Math.min(1, Math.max(0, noise * 0.74 + diagonal * 0.26));
+  return Math.round(35 + Math.pow(rank, 2.15) * 430);
+});
+
+function renderAboutSocialLinks() {
+  return ABOUT_SOCIAL_LINKS.map((link) => {
+    const hasHref = link.href.trim().length > 0;
+    const isWechat = link.label.toLowerCase() === 'wechat';
+    const className =
+      'about-social-link ' +
+      (hasHref || isWechat
+        ? 'about-social-link--active text-[#ff5357] cursor-pointer'
+        : 'about-social-link--disabled text-[#ffb3af]/40 cursor-default pointer-events-none');
+
+    if (isWechat) {
+      return (
+        <span
+          key={link.label}
+          className="about-social-trigger about-social-trigger--wechat relative inline-flex flex-col items-center outline-none"
+          tabIndex={0}
+        >
+          <span className="about-social-intro-frame">
+            <span className={className}>{link.label}</span>
+          </span>
+          <span className="about-social-qr about-social-qr--footer pointer-events-none absolute z-50 w-36 rounded border border-[#ff5357]/50 bg-black/90 p-2 opacity-0 shadow-[0_0_24px_rgba(255,83,87,0.35)] transition duration-200">
+            <span className="about-social-qr-frame" aria-hidden="true" />
+            <img
+              src={ABOUT_WECHAT_QR_SRC}
+              alt="Wechat QR code"
+              className="block aspect-square w-full rounded-sm bg-white object-cover"
+              loading="lazy"
+            />
+            <span className="about-social-qr-pixels" aria-hidden="true">
+              {QR_PIXEL_DELAYS.map((delay, index) => (
+                <span
+                  key={index}
+                  style={{ '--qr-pixel-delay': `${delay}ms` } as CSSProperties}
+                />
+              ))}
+            </span>
+          </span>
+        </span>
+      );
+    }
+
+    if (!hasHref) {
+      return (
+        <span key={link.label} className={className} title="Set href in src/lib/about.ts">
+          {link.label}
+        </span>
+      );
+    }
+
+    return (
+      <span key={link.label} className="about-social-trigger">
+        <span className="about-social-intro-frame">
+          <a href={link.href} target="_blank" rel="noreferrer" className={className}>
+            {link.label}
+          </a>
+        </span>
+      </span>
+    );
+  });
+}
+
+export default function FooterShell({
+  onPrev,
+  onNext,
+  hidePageNav = false,
+  showAboutSocial = false,
+}: FooterShellProps) {
   const [isSoundOn, setIsSoundOn] = useState(false);
   const hasStarted = useRef(false);
 
@@ -73,6 +154,12 @@ export default function FooterShell({ onPrev, onNext, hidePageNav = false }: Foo
         <span className="text-[#ff5357] font-bold text-[13px] md:text-sm tracking-wide font-space leading-none uppercase">
           Nxt / Prev.
         </span>
+
+        {showAboutSocial && (
+          <nav className="about-social-footer-nav about-social-nav--hover-ready flex flex-wrap items-center gap-x-6 gap-y-2 pl-4 font-mono text-[12px] md:text-[13px] uppercase tracking-[0.18em]">
+            {renderAboutSocialLinks()}
+          </nav>
+        )}
       </div>
 
       {/* Cyberpunk BG Sound status toggle button - Visible and sticky on all devices */}

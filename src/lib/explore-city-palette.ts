@@ -26,8 +26,6 @@ export const EXPLORE_BUILDING_BANDS = {
   coverage: 0.35,
   /** 主场景光带强度 */
   intensity: 0.12,
-  /** 地面镜像光带强度（减弱） */
-  reflectIntensity: 0.042,
   /** 呼吸角速度 rad/s → 周期 ≈ 2π/speed ≈ 3s */
   breatheSpeed: 2.1,
   /** 呼吸深度：最暗 = 1-depth，最亮 = 1.0 */

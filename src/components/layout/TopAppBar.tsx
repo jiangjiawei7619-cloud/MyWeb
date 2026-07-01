@@ -9,6 +9,8 @@ interface TopAppBarProps {
   onPageChange: (page: ActivePage) => void;
   hideStatusReadout?: boolean;
   showExploreKeyHints?: boolean;
+  /** Play top-left brand cut-in when the app first becomes visible (e.g. after loading). */
+  playInitialBrandIntro?: boolean;
 }
 
 export default function TopAppBar({
@@ -16,14 +18,17 @@ export default function TopAppBar({
   onPageChange,
   hideStatusReadout = false,
   showExploreKeyHints = false,
+  playInitialBrandIntro = false,
 }: TopAppBarProps) {
   const [fps, setFps] = useState(62);
   const [frameTime, setFrameTime] = useState(5.8);
   const [isChanging, setIsChanging] = useState(false);
   const [aboutBrandIntroKey, setAboutBrandIntroKey] = useState(0);
   const [brandReturnIntroActive, setBrandReturnIntroActive] = useState(false);
+  const [initialBrandIntroActive, setInitialBrandIntroActive] = useState(false);
   const [hoverTriggers, setHoverTriggers] = useState<Record<string, number>>({});
   const previousPageRef = useRef<ActivePage>(currentPage);
+  const initialBrandIntroStartedRef = useRef(false);
 
   const handleHoverItem = (key: string) => {
     setHoverTriggers((prev) => ({
@@ -37,6 +42,19 @@ export default function TopAppBar({
     const timeout = setTimeout(() => setIsChanging(false), 350);
     return () => clearTimeout(timeout);
   }, [currentPage]);
+
+  useEffect(() => {
+    if (!playInitialBrandIntro || initialBrandIntroStartedRef.current) return undefined;
+
+    initialBrandIntroStartedRef.current = true;
+    setInitialBrandIntroActive(true);
+
+    const timeout = window.setTimeout(() => {
+      setInitialBrandIntroActive(false);
+    }, 2800);
+
+    return () => window.clearTimeout(timeout);
+  }, [playInitialBrandIntro]);
 
   useEffect(() => {
     const previousPage = previousPageRef.current;
@@ -73,14 +91,17 @@ export default function TopAppBar({
   };
 
   const isAboutPage = currentPage === 'ABOUT';
+  const isLeavingAboutNow = previousPageRef.current === 'ABOUT' && currentPage !== 'ABOUT';
+  const shouldPlayBrandReturnIntro =
+    brandReturnIntroActive || isLeavingAboutNow || initialBrandIntroActive;
   const brandNameIntroClass = isAboutPage
     ? 'about-top-brand-cut about-top-brand-cut--name'
-    : brandReturnIntroActive
+    : shouldPlayBrandReturnIntro
       ? 'top-brand-return-cut top-brand-return-cut--name'
       : '';
   const brandSubtitleIntroClass = isAboutPage
     ? 'about-top-brand-subtitle'
-    : brandReturnIntroActive
+    : shouldPlayBrandReturnIntro
       ? 'top-brand-return-subtitle'
       : '';
   const brandNameClass = isAboutPage

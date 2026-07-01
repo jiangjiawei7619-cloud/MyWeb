@@ -1,15 +1,5 @@
 /** EXPLORE 赛博城市 — 建筑 / 霓虹灯牌 / 楼基光池 */
 
-const GLSL_GEOMETRIC_REFLECTION_SEAM = /* glsl */ `
-  float geoSeamMask(vec2 xz) {
-    return 0.0;
-  }
-
-  vec2 geoReflectionSeamDistortion(vec2 xz) {
-    return vec2(0.0);
-  }
-`;
-
 export const exploreCityBuildingVert = /* glsl */ `
   attribute float aSeed;
   attribute float aHeight;
@@ -44,35 +34,7 @@ export const exploreCityBuildingFrag = /* glsl */ `
   uniform vec3 uAccent;
   uniform vec3 uFog;
   uniform float uIntensity;
-  uniform float uReflect;
-  uniform float uReflectBoost;
-  uniform float uReflectGain;
-  uniform float uNeonReflect;
   uniform vec3 uCamPos;
-  uniform float uReflectFadeDepth;
-  uniform float uReflectDistNear;
-  uniform float uReflectDistFar;
-  uniform float uReflectDistStrength;
-  uniform float uReflectFresnelPower;
-  uniform float uReflectFresnelBoost;
-  uniform float uReflectBlurNear;
-  uniform float uReflectBlurFar;
-  uniform float uReflectBlurFogMix;
-  uniform float uReflectSurfacePass;
-  uniform float uBrickPitch;
-  uniform float uBrickGap;
-  uniform vec2 uBrickOrigin;
-  uniform float uSeamReflectGain;
-  uniform float uSurfaceReflectGain;
-  uniform float uSeamBlurScale;
-  uniform float uSurfaceBlurScale;
-  uniform float uUseEdgeGapMask;
-  uniform float uGapWidthFrac;
-  uniform float uGapFeather;
-  uniform float uReflectionSeamDistortion;
-  uniform float uSeamDistortionNoiseScale;
-  uniform float uSeamDistortionSpeed;
-  uniform float uDebugDistortedReflection;
   uniform sampler2D uTexConcrete;
   uniform sampler2D uTexGlass;
   uniform sampler2D uTexMetal;
@@ -90,7 +52,6 @@ export const exploreCityBuildingFrag = /* glsl */ `
   uniform float uFacadeIntensity;
   uniform float uBandCoverage;
   uniform float uBandIntensity;
-  uniform float uBandReflectIntensity;
   uniform float uBandBreatheSpeed;
   uniform float uBandBreatheDepth;
   uniform float uBandWidth;
@@ -128,12 +89,6 @@ export const exploreCityBuildingFrag = /* glsl */ `
     float fog = 1.0 - exp(-d * uFarFogDensity);
     return clamp(fog, 0.0, 1.0);
   }
-
-  float brickSeamMask(vec2 xz) {
-    return 0.0;
-  }
-
-  ${GLSL_GEOMETRIC_REFLECTION_SEAM}
 
   vec3 triPlanarBlend(vec3 n) {
     vec3 b = abs(n);
@@ -271,39 +226,6 @@ export const exploreCityBuildingFrag = /* glsl */ `
     col += edgeNeonTint(vSeed) * edgeGlow;
 
     vec3 lightBands = buildingLightBands(vPos, n, vSeed);
-
-    if (uReflect > 0.5) {
-      float fade = smoothstep(0.0, -uReflectFadeDepth, vWorldPos.y);
-      float mirrorFresnel = pow(1.0 - clamp(dot(vec3(0.0, -1.0, 0.0), viewDir), 0.0, 1.0), uReflectFresnelPower);
-      float horizDist = length(vWorldPos.xz - uCamPos.xz);
-      float distFalloff = 1.0 - smoothstep(uReflectDistNear, uReflectDistFar, horizDist) * uReflectDistStrength;
-      float blurMix = smoothstep(uReflectBlurNear, uReflectBlurFar, horizDist) * uReflectBlurFogMix;
-      float seamMask = brickSeamMask(vWorldPos.xz);
-      float brickGain = uReflectSurfacePass > 0.5
-        ? mix(uSurfaceReflectGain, uSurfaceReflectGain * 0.14, seamMask)
-        : mix(0.24, uSeamReflectGain, seamMask);
-      float blurScale = uReflectSurfacePass > 0.5
-        ? mix(uSurfaceBlurScale, uSeamBlurScale, seamMask)
-        : mix(0.58, uSeamBlurScale, seamMask);
-      blurMix *= blurScale;
-
-      col *= uReflectGain * fade * uReflectBoost * distFalloff * mix(1.0, uReflectFresnelBoost, mirrorFresnel) * brickGain;
-      col += edgeNeonTint(vSeed) * edgeGlow * uNeonReflect * uReflectBoost * mirrorFresnel * 0.35;
-      col += lightBands * uBandReflectIntensity * uReflectBoost * fade;
-      if (uReflectSurfacePass < 0.5) {
-        col = mix(col, col * 0.68, seamMask * 0.42);
-      }
-      col *= uIntensity;
-      col = mix(col, uFog, blurMix);
-      col = mix(col, uFarFogColor, farFogAmount(depth));
-      col *= distFade;
-      float alphaBase = fade * mix(0.82, 0.98, mirrorFresnel);
-      float alphaMask = uReflectSurfacePass > 0.5
-        ? mix(1.0, 0.14, seamMask)
-        : mix(0.34, 1.0, seamMask);
-      gl_FragColor = vec4(col, alphaBase * alphaMask * distFade);
-      return;
-    }
 
     vec3 fullCol = col;
     col += lightBands * uBandIntensity;
@@ -451,19 +373,7 @@ export const exploreNeonSignVert = /* glsl */ `
 export const exploreNeonSignFrag = /* glsl */ `
   precision highp float;
   uniform float uTime;
-  uniform float uReflect;
-  uniform float uReflectBoost;
-  uniform float uReflectGain;
   uniform vec3 uCamPos;
-  uniform float uReflectFadeDepth;
-  uniform float uReflectDistNear;
-  uniform float uReflectDistFar;
-  uniform float uReflectDistStrength;
-  uniform float uReflectFresnelPower;
-  uniform float uReflectFresnelBoost;
-  uniform float uReflectBlurNear;
-  uniform float uReflectBlurFar;
-  uniform float uReflectBlurFogMix;
   uniform float uGlitchDuration;
   uniform float uGlitchSteps;
   uniform float uGlitchEnableRatio;
@@ -485,7 +395,6 @@ export const exploreNeonSignFrag = /* glsl */ `
   uniform float uPosterBaseBrightness;
   uniform float uPosterPulseStrength;
   uniform float uPosterScanlineStrength;
-  uniform float uReflectSurfacePass;
   uniform float uDistanceFadeStart;
   uniform float uDistanceFadeEnd;
   uniform float uLod1Start;
@@ -495,21 +404,6 @@ export const exploreNeonSignFrag = /* glsl */ `
   uniform vec3 uFarFogColor;
   uniform float uFarFogDensity;
   uniform float uGlitchFullEnd;
-  uniform float uBrickPitch;
-  uniform float uBrickGap;
-  uniform vec2 uBrickOrigin;
-  uniform float uSeamReflectGain;
-  uniform float uSurfaceReflectGain;
-  uniform float uSeamBlurScale;
-  uniform float uSurfaceBlurScale;
-  uniform float uUseEdgeGapMask;
-  uniform float uGapWidthFrac;
-  uniform float uGapFeather;
-  uniform float uReflectionSeamDistortion;
-  uniform float uSeamDistortionNoiseScale;
-  uniform float uSeamDistortionSpeed;
-  uniform float uDebugDistortedReflection;
-
   varying vec2 vUv;
   varying vec3 vColor;
   varying vec2 vAtlasUvOffset;
@@ -776,12 +670,6 @@ export const exploreNeonSignFrag = /* glsl */ `
     return col;
   }
 
-  float brickSeamMask(vec2 xz) {
-    return 0.0;
-  }
-
-  ${GLSL_GEOMETRIC_REFLECTION_SEAM}
-
   void main() {
     vec2 uv = vUv;
     float depth = length(vWorldPos - uCamPos);
@@ -789,8 +677,7 @@ export const exploreNeonSignFrag = /* glsl */ `
     if (distFade <= 0.002) discard;
     float lod1Mix = smoothstep(uLod1Start, uLod1End, depth);
     float lod2Mix = smoothstep(uLod2Start, uLod2End, depth);
-    vec2 panelOff = uReflect > 0.5 ? geoReflectionSeamDistortion(vWorldPos.xz) : vec2(0.0);
-    vec2 panel = uv + panelOff;
+    vec2 panel = uv;
     float edgeFade = smoothstep(0.0, 0.02, uv.x) * smoothstep(1.0, 0.98, uv.x)
                    * smoothstep(0.0, 0.02, uv.y) * smoothstep(1.0, 0.98, uv.y);
 
@@ -835,23 +722,6 @@ export const exploreNeonSignFrag = /* glsl */ `
       poster = microGlitchPoster09(panel, vPosterIndex, microIntensity, vSeed);
     }
 
-    if (uReflect > 0.5) {
-      float seamM = geoSeamMask(vWorldPos.xz);
-      if (seamM > 0.06) {
-        vec2 grid = uUseEdgeGapMask > 0.5
-          ? fract(vWorldPos.xz / uBrickPitch)
-          : fract((vWorldPos.xz - uBrickOrigin) / uBrickPitch);
-        vec2 dte = min(grid, 1.0 - grid);
-        bool vSeam = dte.x < dte.y;
-        float sign = vSeam ? (grid.x > 0.5 ? 1.0 : -1.0) : (grid.y > 0.5 ? 1.0 : -1.0);
-        vec2 pullDir = vSeam ? vec2(sign, 0.0) : vec2(0.0, sign);
-        float pullAmt = seamM * (uDebugDistortedReflection > 0.5 ? 0.14 : 0.045);
-        vec3 pLo = fetchPoster(panel - pullDir * pullAmt, vPosterIndex);
-        vec3 pHi = fetchPoster(panel + pullDir * pullAmt, vPosterIndex);
-        poster = vec3(pHi.r, poster.g, pLo.b);
-      }
-    }
-
     float cheapPulse = 0.94 + 0.06 * sin(uTime * (1.2 + vFlickerSpeed * 5.0) + vSeed * 7.13);
     cheapPulse *= 1.0 + sin(uTime * 0.45 + vSeed * 2.1) * uPosterPulseStrength;
     float scanWave = 0.978 - uPosterScanlineStrength
@@ -894,34 +764,6 @@ export const exploreNeonSignFrag = /* glsl */ `
     }
 
     float a = edgeFade * 0.98;
-
-    if (uReflect > 0.5) {
-      float groundFade = smoothstep(0.0, -uReflectFadeDepth * 0.72, vWorldPos.y);
-      vec3 viewDir = normalize(uCamPos - vWorldPos);
-      float mirrorFresnel = pow(1.0 - clamp(dot(vec3(0.0, -1.0, 0.0), viewDir), 0.0, 1.0), uReflectFresnelPower);
-      float horizDist = length(vWorldPos.xz - uCamPos.xz);
-      float distFalloff = 1.0 - smoothstep(uReflectDistNear, uReflectDistFar, horizDist) * uReflectDistStrength;
-      float blurMix = smoothstep(uReflectBlurNear, uReflectBlurFar, horizDist) * uReflectBlurFogMix * 0.65;
-      float seamMask = brickSeamMask(vWorldPos.xz);
-      float brickGain = uReflectSurfacePass > 0.5
-        ? mix(uSurfaceReflectGain, uSurfaceReflectGain * 0.12, seamMask)
-        : mix(0.22, uSeamReflectGain, seamMask);
-      float blurScale = uReflectSurfacePass > 0.5
-        ? mix(uSurfaceBlurScale, uSeamBlurScale, seamMask)
-        : mix(0.55, uSeamBlurScale, seamMask);
-      blurMix *= blurScale;
-
-      a *= groundFade * mix(0.78, 0.96, mirrorFresnel);
-      float alphaMask = uReflectSurfacePass > 0.5
-        ? mix(1.0, 0.1, seamMask)
-        : mix(0.36, 1.0, seamMask);
-      a *= alphaMask;
-      col *= uReflectGain * groundFade * uReflectBoost * distFalloff * mix(1.0, uReflectFresnelBoost, mirrorFresnel) * brickGain;
-      if (uReflectSurfacePass < 0.5) {
-        col = mix(col, col * 0.65, seamMask * 0.48);
-      }
-      col = mix(col, vec3(0.015, 0.01, 0.028), blurMix);
-    }
 
     col *= distFade;
     col = mix(col, uFarFogColor, signFarFogAmount(depth));

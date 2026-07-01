@@ -89,18 +89,6 @@ function createHologramBaseUniforms() {
     uDistFalloffNear: { value: 0 },
     uDistFalloffFar: { value: 1 },
     uDistFalloffMin: { value: 1 },
-    uReflectFadeDepth: { value: 1 },
-    uReflectDistNear: { value: 0 },
-    uReflectDistFar: { value: 1 },
-    uReflectDistStrength: { value: 0 },
-    uReflectFresnelPower: { value: 1 },
-    uReflectFresnelBoost: { value: 0 },
-    uReflectBlurNear: { value: 0 },
-    uReflectBlurFar: { value: 1 },
-    uReflectBlurFogMix: { value: 0 },
-    uReflectDimmer: { value: 1 },
-    uReflectAlphaFloor: { value: 0 },
-    uReflectBlurScale: { value: 1 },
   };
 }
 
@@ -230,9 +218,6 @@ export default function ExploreHologramPoster({
       uMap: { value: texture },
       uOpacity: { value: burst.baseOpacity },
       uMix: { value: 1 },
-      uReflect: { value: 0 },
-      uReflectBoost: { value: 1 },
-      uReflectGain: { value: 1 },
       ...createHologramBaseUniforms(),
       uBrightness: { value: burst.bodyBrightness },
       uBloomBoost: { value: burst.bloomBoost },
@@ -262,9 +247,6 @@ export default function ExploreHologramPoster({
         uGlitchSteps: { value: burst.steps },
         uLayerGain: { value: burst.layerGain },
         uMix: { value: 0 },
-        uReflect: { value: 0 },
-        uReflectBoost: { value: 1 },
-        uReflectGain: { value: 1 },
         ...createHologramBaseUniforms(),
       })),
     [burst, texture],
@@ -450,7 +432,7 @@ export default function ExploreHologramPoster({
   return (
     <>
       <group ref={groupRef} renderOrder={12}>
-        <mesh renderOrder={12}>
+        <mesh renderOrder={12} frustumCulled={false}>
           <planeGeometry args={planeArgs} />
           <shaderMaterial
             ref={cleanMatRef}
@@ -474,6 +456,7 @@ export default function ExploreHologramPoster({
                 layerMeshRefs.current[channel] = el;
               }}
               renderOrder={13 + channel}
+              frustumCulled={false}
             >
               <planeGeometry args={planeArgs} />
               <shaderMaterial

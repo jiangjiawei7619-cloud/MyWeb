@@ -105,8 +105,43 @@ function getHeatmapFlashDuration(day: HeatmapDay, variant: CyberHeatmapProps['va
   return scaleHeatmapTiming(HEATMAP_FLASH_FAST_MS + random * (HEATMAP_FLASH_SLOW_MS - HEATMAP_FLASH_FAST_MS), variant);
 }
 
+function getHeatmapFlashProfile(day: HeatmapDay, variant: CyberHeatmapProps['variant']): number {
+  return Math.min(5, Math.floor(seededUnit(`${variant}:${day.date}:flash-profile`) * 6));
+}
+
+function toPx(value: number): string {
+  return `${Number(value.toFixed(2))}px`;
+}
+
+function getHeatmapMotionVars(day: HeatmapDay, variant: CyberHeatmapProps['variant']): CSSProperties {
+  const levelEnergy = 0.58 + day.level * 0.08;
+  const xASeed = seededUnit(`${variant}:${day.date}:motion-x-a`) * 2 - 1;
+  const yASeed = seededUnit(`${variant}:${day.date}:motion-y-a`) * 2 - 1;
+  const xBSeed = seededUnit(`${variant}:${day.date}:motion-x-b`) * 2 - 1;
+  const yBSeed = seededUnit(`${variant}:${day.date}:motion-y-b`) * 2 - 1;
+  const scaleSeed = seededUnit(`${variant}:${day.date}:motion-scale`);
+  const opacitySeed = seededUnit(`${variant}:${day.date}:motion-opacity`);
+  const shiftBase = variant === 'leetcode' ? 1.38 : 1.06;
+  const crossAxis = variant === 'leetcode' ? 0.86 : 0.68;
+  const scaleBoost = variant === 'leetcode' ? 0.036 : 0.026;
+
+  return {
+    '--heatmap-shift-x-a': toPx(xASeed * shiftBase),
+    '--heatmap-shift-y-a': toPx(yASeed * crossAxis),
+    '--heatmap-shift-x-b': toPx(xBSeed * shiftBase * 0.78),
+    '--heatmap-shift-y-b': toPx(yBSeed * crossAxis * 0.72),
+    '--heatmap-shift-x-c': toPx(-xASeed * shiftBase * 0.46),
+    '--heatmap-shift-y-c': toPx(-yBSeed * crossAxis * 0.54),
+    '--heatmap-pulse-scale-a': (1 + scaleBoost + scaleSeed * scaleBoost + day.level * 0.004).toFixed(3),
+    '--heatmap-pulse-scale-b': (1 + scaleBoost * 0.45 + (1 - scaleSeed) * scaleBoost * 0.52).toFixed(3),
+    '--heatmap-dim-opacity-a': Math.max(0.5, 0.82 - levelEnergy * 0.19 - opacitySeed * 0.1).toFixed(3),
+    '--heatmap-dim-opacity-b': Math.max(0.62, 0.9 - levelEnergy * 0.12 - (1 - opacitySeed) * 0.08).toFixed(3),
+  } as CSSProperties;
+}
+
 type HeatmapCellProps = {
   day: HeatmapDay;
+  variant: CyberHeatmapProps['variant'];
   bootDelay: number;
   flashDelay: number;
   flashDuration: number;
@@ -118,6 +153,7 @@ type HeatmapCellProps = {
 
 const HeatmapCell = memo(function HeatmapCell({
   day,
+  variant,
   bootDelay,
   flashDelay,
   flashDuration,
@@ -126,10 +162,14 @@ const HeatmapCell = memo(function HeatmapCell({
   onHover,
   onClear,
 }: HeatmapCellProps) {
+  const flashProfile = getHeatmapFlashProfile(day, variant);
+
   return (
     <button
       type="button"
-      className={`cyber-heatmap-cell ${booting ? 'cyber-heatmap-cell--boot' : ''} level-${day.level}`}
+      className={`cyber-heatmap-cell cyber-heatmap-cell--motion-${flashProfile} ${
+        booting ? 'cyber-heatmap-cell--boot' : ''
+      } level-${day.level}`}
       aria-label={`${day.date}: ${day.count}`}
       style={
         booting
@@ -137,6 +177,7 @@ const HeatmapCell = memo(function HeatmapCell({
               animationDelay: `${bootDelay}ms, ${bootDelay + cellAppearMs + flashDelay}ms`,
               '--heatmap-cell-appear-duration': `${cellAppearMs}ms`,
               '--heatmap-flash-duration': `${flashDuration}ms`,
+              ...getHeatmapMotionVars(day, variant),
             } as CSSProperties)
           : undefined
       }
@@ -220,6 +261,7 @@ export function CyberHeatmapGrid({ data, variant }: CyberHeatmapGridProps) {
                   <HeatmapCell
                     key={day.date}
                     day={day}
+                    variant={variant}
                     bootDelay={bootDelay}
                     flashDelay={flashDelay}
                     flashDuration={flashDuration}

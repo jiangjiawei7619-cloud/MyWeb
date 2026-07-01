@@ -9,6 +9,10 @@ import {
   applyObakeHumanoidPose,
   updateObakeVrm,
 } from '@/components/canvas/obake-avatar/obake-vrm-rig';
+import {
+  createObakeFaceOverlay,
+  disposeObakeFaceOverlay,
+} from '@/components/canvas/obake-avatar/obake-face-overlay';
 
 export type AvatarVisualState = 'move' | 'jump' | 'doubleJump' | 'fall' | 'land';
 
@@ -180,11 +184,15 @@ export class ObakeAvatarController {
   private hoverScale = 1;
   private clickPulse = 0;
   private readonly flipPivot = new THREE.Vector3(0, 0.7, 0);
+  private faceOverlay: THREE.Object3D | null = null;
 
   constructor() {
+    this.root.visible = false;
     this.visual.rotation.order = 'YXZ';
     this.root.layers.set(OBAKE_AVATAR_LAYER);
+    this.root.layers.enable(0);
     this.visual.layers.set(OBAKE_AVATAR_LAYER);
+    this.visual.layers.enable(0);
     this.root.add(this.visual);
   }
 
@@ -211,6 +219,7 @@ export class ObakeAvatarController {
     }
 
     this.facingInitialized = false;
+    this.root.visible = false;
     this.smoothLeanX = 0;
     this.smoothSwayY = 0;
     this.smoothRollZ = 0;
@@ -234,10 +243,13 @@ export class ObakeAvatarController {
     this.preTurnYaw = null;
     this.preTurnTimer = 0;
     this.action = null;
+    this.faceOverlay = createObakeFaceOverlay(vrm);
   }
 
   detachVrm() {
     if (this.vrm) {
+      disposeObakeFaceOverlay(this.faceOverlay);
+      this.faceOverlay = null;
       this.visual.remove(this.vrm.scene);
       this.vrm = null;
     }
@@ -255,6 +267,48 @@ export class ObakeAvatarController {
 
   setVisible(visible: boolean) {
     this.root.visible = visible;
+  }
+
+  /** 加载/入场过渡期间：对齐落地位置与面向镜头，保持隐藏直至镜头就绪 */
+  prepareSpawnPose(controller: FirstPersonController) {
+    if (!this.vrm) return;
+
+    const cfg = this.config;
+    controller.getDisplayBodyPosition(_scratchPos, 1);
+    this.root.position.set(
+      _scratchPos.x + cfg.positionOffset[0],
+      _scratchPos.y + cfg.yOffset + cfg.positionOffset[1],
+      _scratchPos.z + cfg.positionOffset[2],
+    );
+
+    this.smoothYaw = controller.getLookYaw() + Math.PI;
+    this.facingInitialized = true;
+    this.root.rotation.y = this.smoothYaw;
+
+    applyObakeHumanoidPose(this.vrm, {
+      time: this.time,
+      moveStrength: 0,
+      airborne: false,
+      runPhase: this.runPhase,
+      airbornePhase: this.airbornePosePhase,
+      speedRatio: 0,
+      rootLean: 0,
+      rootRoll: 0,
+      turnLean: 0,
+      jumpStrength: 0,
+      doubleJumpStrength: 0,
+      flipPhase: 0,
+      airborneStrength: 0,
+      landStrength: 0,
+    });
+    updateObakeVrm(this.vrm, 0, {
+      horizontalVelocity: _scratchVel.set(0, 0, 0),
+      horizontalAcceleration: this.horizontalAcceleration.set(0, 0, 0),
+      runPhase: this.runPhase,
+      speedRatio: 0,
+      runBlend: 0,
+      turnLean: 0,
+    });
   }
 
   isReady() {
@@ -552,17 +606,15 @@ export class ObakeAvatarController {
         targetYaw = wishYaw;
         turnSpeed = 14;
         maxYawStep = 0.18;
+      } else {
+        // 静止时面向镜头（第三人称相机在视线反侧）
+        targetYaw = controller.getLookYaw() + Math.PI;
+        turnSpeed = 14;
+        maxYawStep = 0.2;
       }
     }
 
     this.debug.targetYaw = targetYaw;
-    if (targetYaw === null) {
-      const relaxT = dampAlpha(8, delta);
-      this.smoothTurnLean = THREE.MathUtils.lerp(this.smoothTurnLean, 0, relaxT);
-      this.debug.yawDelta = 0;
-      this.debug.smoothYaw = this.smoothYaw;
-      return;
-    }
 
     if (!this.facingInitialized) {
       this.smoothYaw = targetYaw;

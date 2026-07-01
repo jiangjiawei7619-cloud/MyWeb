@@ -74,7 +74,7 @@ export default function CommitPulseLine({ pulse }: CommitPulseLineProps) {
           <polyline className="github-commit-pulse__trace" points={polylinePoints} />
           <polyline className="github-commit-pulse__trace github-commit-pulse__trace--flow" points={polylinePoints} />
           {coordinates.map((point, index) => {
-            const enterDelay = Math.round(Math.pow(index, 1.32) * 19);
+            const enterDelay = Math.round(320 + Math.pow(index, 1.24) * 38);
 
             return (
               <circle

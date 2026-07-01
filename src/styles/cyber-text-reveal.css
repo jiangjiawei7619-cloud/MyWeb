@@ -1,0 +1,236 @@
+/* CyberTextReveal — prevent stacked ghost text before line measure + animation */
+.cyber-text-reveal-line {
+  min-height: 1.72em;
+}
+
+.cyber-text-reveal:not(.cyber-text-reveal--ready) .cyber-text-reveal-copy {
+  opacity: 0;
+  animation: none;
+  transform: none;
+  clip-path: none;
+  text-shadow: none;
+}
+
+.about-intro-columns-wrap {
+  width: 100%;
+  max-width: min(1020px, 54vw);
+}
+
+.about-intro-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .about-intro-columns {
+    grid-template-columns: minmax(0, 430px) minmax(0, 520px);
+    column-gap: 2.5rem;
+    align-items: start;
+  }
+}
+
+@media (max-width: 1180px) {
+  .about-intro-columns-wrap {
+    max-width: 100%;
+  }
+}
+
+.about-social-footer-nav .about-social-intro-frame {
+  display: inline-block;
+  opacity: 0;
+  clip-path: inset(100% 0 0);
+  transform: translateY(0.72rem) scaleY(0.96);
+  transform-origin: bottom;
+  will-change: opacity, clip-path, transform, filter, text-shadow;
+  animation: aboutSocialFooterCutIn 0.92s cubic-bezier(0.08, 0.82, 0.16, 1) 2.03s both;
+}
+
+.about-social-footer-nav .about-social-trigger:nth-child(2) .about-social-intro-frame {
+  animation-delay: 2.08s;
+}
+
+.about-social-footer-nav .about-social-trigger:nth-child(3) .about-social-intro-frame {
+  animation-delay: 2.13s;
+}
+
+.about-social-footer-nav .about-social-trigger:nth-child(4) .about-social-intro-frame {
+  animation-delay: 2.18s;
+}
+
+.about-social-footer-nav .about-social-trigger--wechat {
+  position: relative;
+  width: max-content;
+  overflow: visible;
+}
+
+.about-social-footer-nav .about-social-trigger--wechat .about-social-qr {
+  --about-qr-transform: translateX(-50%);
+  top: auto !important;
+  right: auto !important;
+  bottom: calc(100% + 16px) !important;
+  left: 50% !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden;
+  border-color: transparent;
+  transform: var(--about-qr-transform);
+  transform-origin: bottom center;
+  isolation: isolate;
+}
+
+.about-social-footer-nav .about-social-trigger--wechat .about-social-qr img {
+  position: relative;
+  z-index: 1;
+}
+
+.about-social-qr-pixels {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-rows: repeat(10, minmax(0, 1fr));
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.about-social-qr-pixels > span {
+  opacity: 1;
+  background: #020004;
+  box-shadow: inset 0 0 0 1px rgba(255, 83, 87, 0.035);
+  transform: scale(1.035);
+  transform-origin: center;
+  will-change: opacity, transform;
+}
+
+.about-social-qr-frame {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 83, 87, 0.86), rgba(255, 83, 87, 0.54)) left top / 0 1px no-repeat,
+    linear-gradient(180deg, rgba(255, 83, 87, 0.76), rgba(255, 83, 87, 0.46)) left top / 1px 0 no-repeat,
+    linear-gradient(180deg, rgba(255, 83, 87, 0.76), rgba(255, 83, 87, 0.46)) right top / 1px 0 no-repeat,
+    linear-gradient(90deg, rgba(255, 83, 87, 0.72), rgba(255, 83, 87, 0.5)) left bottom / 0 1px no-repeat;
+  box-shadow: inset 0 0 0 1px rgba(255, 83, 87, 0);
+  filter: drop-shadow(0 0 0 rgba(255, 83, 87, 0));
+  will-change: opacity, background-size, box-shadow, filter;
+}
+
+@keyframes aboutSocialFooterCutIn {
+  0% {
+    opacity: 0;
+    clip-path: inset(100% 0 0);
+    filter: brightness(0.6);
+    text-shadow: none;
+    transform: translateY(0.72rem) scaleY(0.96);
+  }
+  20% {
+    opacity: 1;
+    filter: brightness(1.75);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 18px rgba(255, 83, 87, 0.45);
+  }
+  34% {
+    opacity: 0.62;
+    filter: brightness(0.9);
+  }
+  48% {
+    opacity: 1;
+    filter: brightness(1.3);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(0);
+    filter: brightness(1);
+    text-shadow: none;
+    transform: translateY(0) scaleY(1);
+    will-change: auto;
+  }
+}
+
+.about-social-trigger--wechat:hover .about-social-qr,
+.about-social-trigger--wechat:focus .about-social-qr,
+.about-social-trigger--wechat:focus-within .about-social-qr {
+  animation: aboutQrPanelIn 0.58s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.about-social-trigger--wechat:hover .about-social-qr-pixels > span,
+.about-social-trigger--wechat:focus .about-social-qr-pixels > span,
+.about-social-trigger--wechat:focus-within .about-social-qr-pixels > span {
+  animation: aboutQrPixelDissolve 0.46s cubic-bezier(0.16, 1, 0.3, 1) var(--qr-pixel-delay, 0ms) both;
+}
+
+.about-social-trigger--wechat:hover .about-social-qr-frame,
+.about-social-trigger--wechat:focus .about-social-qr-frame,
+.about-social-trigger--wechat:focus-within .about-social-qr-frame {
+  animation: aboutQrFrameTraceIn 0.74s cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+@keyframes aboutQrPanelIn {
+  0% {
+    opacity: 0;
+    box-shadow: none;
+    transform: var(--about-qr-transform) translateY(0.34rem) scale(0.985);
+  }
+  28% {
+    opacity: 0.98;
+    box-shadow: 0 0 16px rgba(255, 83, 87, 0.24);
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 24px rgba(255, 83, 87, 0.35);
+    transform: var(--about-qr-transform);
+  }
+}
+
+@keyframes aboutQrPixelDissolve {
+  0% {
+    opacity: 1;
+    transform: scale(1.035);
+  }
+  46% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.58);
+  }
+}
+
+@keyframes aboutQrFrameTraceIn {
+  0% {
+    opacity: 1;
+    background-size: 0 1px, 1px 0, 1px 0, 0 1px;
+    box-shadow: inset 0 0 0 1px rgba(255, 83, 87, 0);
+    filter: drop-shadow(0 0 0 rgba(255, 83, 87, 0));
+  }
+  48% {
+    opacity: 1;
+    background-size: 100% 1px, 1px 100%, 1px 0, 0 1px;
+    box-shadow: inset 0 0 0 1px rgba(255, 83, 87, 0.08);
+  }
+  49% {
+    background-size: 100% 1px, 1px 100%, 1px 0, 0 1px;
+  }
+  100% {
+    opacity: 1;
+    background-size: 100% 1px, 1px 100%, 1px 100%, 100% 1px;
+    box-shadow: inset 0 0 0 1px rgba(255, 83, 87, 0.2);
+    filter: drop-shadow(0 0 8px rgba(255, 83, 87, 0.18));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-social-footer-nav .about-social-intro-frame {
+    opacity: 1;
+    clip-path: inset(0);
+    animation: none;
+    transform: none;
+  }
+}

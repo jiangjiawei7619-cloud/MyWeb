@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { AdaptiveDpr } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,17 +6,17 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import { createPhysicsWorld, GROUND_HALF_EXTENT, type PhysicsWorldBundle } from '@/physics/createPhysicsWorld';
 import { getPerformancePreset, detectPerformanceTier } from '@/utils/performanceTier';
 import { FirstPersonController } from '@/physics/firstPersonController';
-import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, CAMERA_BASE_FOV, FIXED_TIMESTEP } from '@/physics/rapier-config';
+import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, FIXED_TIMESTEP } from '@/physics/rapier-config';
 import ExploreSceneLighting from '@/components/canvas/ExploreSceneLighting';
 import ExploreToneMapping from '@/components/canvas/ExploreToneMapping';
 import ExploreWorldAtmosphere from '@/components/canvas/ExploreWorldAtmosphere';
 import WorldVoidBase from '@/components/canvas/WorldVoidBase';
 import type { ActivePage } from '@/lib/types';
-import ExploreIntroCamera, {
-  EXPLORE_INTRO_CAMERA_FOV,
-  EXPLORE_INTRO_CAMERA_START,
-  EXPLORE_INTRO_END_ORIENT,
+import {
+  EXPLORE_SPAWN_ORIENT,
+  getExploreSpawnThirdPersonCamera,
 } from '@/components/canvas/ExploreIntroCamera';
+import { EXPLORE_ENTRY_TRANSITION } from '@/lib/section-camera-presets';
 import type { ObakeAvatarController } from '@/components/canvas/obake-avatar/ObakeAvatarController';
 import WorldScene from '@/world/WorldScene';
 import CitySystem from '@/world/systems/CitySystem';
@@ -53,7 +53,6 @@ function PhysicsLoop({
   controllerRef,
   obakeAvatarControllerRef,
   interactive,
-  introActiveRef,
   exploreEntryActiveRef,
   activeSection,
   physicsAlphaRef,
@@ -62,7 +61,6 @@ function PhysicsLoop({
   controllerRef: React.RefObject<FirstPersonController | null>;
   obakeAvatarControllerRef: React.RefObject<ObakeAvatarController | null>;
   interactive: boolean;
-  introActiveRef: React.RefObject<boolean>;
   exploreEntryActiveRef: React.RefObject<boolean>;
   activeSection: ActivePage;
   physicsAlphaRef: React.RefObject<number>;
@@ -70,34 +68,49 @@ function PhysicsLoop({
   const { camera, gl } = useThree();
   const accumulatorRef = useRef(0);
   const initialActiveSectionRef = useRef(activeSection);
+  const initialExploreEntryDoneRef = useRef(false);
+  const spawnPrewarmDoneRef = useRef(false);
 
   useEffect(() => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
     if (!bundleRef.current) return;
     camera.near = 0.1;
     camera.far = 500;
-    camera.fov = CAMERA_BASE_FOV;
+    camera.fov = EXPLORE_ENTRY_TRANSITION.startFov;
     camera.updateProjectionMatrix();
 
     const controller = new FirstPersonController({
       domElement: gl.domElement,
       bundle: bundleRef.current,
-      inputEnabled: interactive,
+      inputEnabled: false,
     });
-    if (
-      initialActiveSectionRef.current === 'EXPLORE' &&
-      !introActiveRef.current &&
-      !controller.isExploreStateReady()
-    ) {
-      controller.commitIntroHandoff(EXPLORE_INTRO_END_ORIENT.yaw, EXPLORE_INTRO_END_ORIENT.pitch);
+    if (initialActiveSectionRef.current === 'EXPLORE') {
+      controller.commitIntroHandoff(EXPLORE_SPAWN_ORIENT.yaw, EXPLORE_SPAWN_ORIENT.pitch);
+      controller.settleSpawnPhysics();
     }
     controllerRef.current = controller;
 
     return () => {
       controller.dispose();
       controllerRef.current = null;
+      initialExploreEntryDoneRef.current = false;
+      spawnPrewarmDoneRef.current = false;
     };
-  }, [camera, gl.domElement, bundleRef, controllerRef, introActiveRef]);
+  }, [camera, gl.domElement, bundleRef, controllerRef]);
+
+  useLayoutEffect(() => {
+    const controller = controllerRef.current;
+    if (!interactive || !controller || !(camera instanceof THREE.PerspectiveCamera)) {
+      return;
+    }
+
+    controller.settleSpawnPhysics(8);
+
+    if (!initialExploreEntryDoneRef.current) {
+      exploreEntryActiveRef.current = true;
+      initialExploreEntryDoneRef.current = true;
+    }
+  }, [camera, controllerRef, exploreEntryActiveRef, interactive]);
 
   useEffect(() => {
     controllerRef.current?.setInputEnabled(interactive);
@@ -107,9 +120,39 @@ function PhysicsLoop({
   useFrame((_, delta) => {
     const controller = controllerRef.current;
     const bundle = bundleRef.current;
+    const obake = obakeAvatarControllerRef.current;
     if (!controller || !bundle || !(camera instanceof THREE.PerspectiveCamera)) return;
-    if (introActiveRef.current || exploreEntryActiveRef.current) return;
-    if (!interactive) return;
+
+    const entryActive = exploreEntryActiveRef.current;
+    const poseReady = obake?.isReady() && controller.isExploreStateReady();
+
+    const prewarmHiddenSpawnPose = () => {
+      if (!poseReady) return;
+      if (!spawnPrewarmDoneRef.current) {
+        controller.settleSpawnPhysics(12);
+        spawnPrewarmDoneRef.current = true;
+      }
+      obake!.setVisible(false);
+      obake!.prepareSpawnPose(controller);
+    };
+
+    const showSpawnPose = () => {
+      if (!poseReady) return;
+      obake!.setVisible(true);
+      obake!.update(delta, controller, 1);
+    };
+
+    // 黑屏加载期：在幕布后预置落地位姿与朝向
+    if (!interactive) {
+      prewarmHiddenSpawnPose();
+      return;
+    }
+
+    // 视野拉伸过渡：角色已在加载期就位，随镜头一起出现
+    if (entryActive) {
+      showSpawnPose();
+      return;
+    }
 
     accumulatorRef.current += Math.min(delta, 0.1);
     while (accumulatorRef.current >= FIXED_TIMESTEP) {
@@ -122,14 +165,9 @@ function PhysicsLoop({
     physicsAlphaRef.current = physicsAlpha;
     controller.syncCamera(camera, delta, physicsAlpha);
 
-    const obake = obakeAvatarControllerRef.current;
-    if (obake?.isReady()) {
-      const showObake =
-        interactive && !introActiveRef.current && !exploreEntryActiveRef.current;
-      obake.setVisible(showObake);
-      if (showObake) {
-        obake.update(delta, controller, physicsAlpha);
-      }
+    if (poseReady) {
+      obake!.setVisible(true);
+      obake!.update(delta, controller, physicsAlpha);
     }
   }, 10);
 
@@ -271,20 +309,14 @@ function SceneContent({
   controllerRef,
   interactive,
   physicsReady,
-  introActive,
-  onIntroComplete,
   activeSection,
 }: {
   bundleRef: React.RefObject<PhysicsWorldBundle | null>;
   controllerRef: React.RefObject<FirstPersonController | null>;
   interactive: boolean;
   physicsReady: boolean;
-  introActive: boolean;
-  onIntroComplete: () => void;
   activeSection: ActivePage;
 }) {
-  const introActiveRef = useRef(introActive);
-  introActiveRef.current = introActive;
   const exploreEntryActiveRef = useRef(false);
   const physicsAlphaRef = useRef(1);
   const obakeAvatarControllerRef = useRef<ObakeAvatarController | null>(null);
@@ -303,7 +335,6 @@ function SceneContent({
         <WorldAuditProbe activeSection={activeSection} />
         <NavigationSystem
           activeSection={activeSection}
-          introActive={introActive}
           controllerRef={controllerRef}
           exploreEntryActiveRef={exploreEntryActiveRef}
         />
@@ -320,21 +351,12 @@ function SceneContent({
               controllerRef={controllerRef}
               obakeAvatarControllerRef={obakeAvatarControllerRef}
               interactive={interactive}
-              introActiveRef={introActiveRef}
               exploreEntryActiveRef={exploreEntryActiveRef}
               activeSection={activeSection}
               physicsAlphaRef={physicsAlphaRef}
             />
             <CharacterSystem avatarControllerRef={obakeAvatarControllerRef} />
           </>
-        )}
-        {introActive && (
-          <ExploreIntroCamera
-            active={introActive}
-            onComplete={onIntroComplete}
-            controllerRef={controllerRef}
-            introActiveRef={introActiveRef}
-          />
         )}
       </WorldScene>
     </>
@@ -346,29 +368,34 @@ function FirstPersonCanvas({
   controllerRef,
   interactive,
   physicsReady,
-  introActive,
-  onIntroComplete,
   activeSection,
 }: {
   bundleRef: React.RefObject<PhysicsWorldBundle | null>;
   controllerRef: React.RefObject<FirstPersonController | null>;
   interactive: boolean;
   physicsReady: boolean;
-  introActive: boolean;
-  onIntroComplete: () => void;
   activeSection: ActivePage;
 }) {
   const dprMax = useMemo(() => getPerformancePreset(detectPerformanceTier()).dprMax, []);
+  const spawnCamera = useMemo(() => getExploreSpawnThirdPersonCamera(), []);
 
   return (
     <Canvas
       className="h-full w-full"
       dpr={[1, dprMax]}
       camera={{
-        position: [EXPLORE_INTRO_CAMERA_START.x, EXPLORE_INTRO_CAMERA_START.y, EXPLORE_INTRO_CAMERA_START.z],
-        fov: EXPLORE_INTRO_CAMERA_FOV,
+        position: spawnCamera.position.toArray(),
+        fov: spawnCamera.fov,
         near: 0.1,
         far: 500,
+      }}
+      onCreated={({ camera }) => {
+        if (!(camera instanceof THREE.PerspectiveCamera)) return;
+        camera.position.copy(spawnCamera.position);
+        camera.rotation.order = 'YXZ';
+        camera.rotation.y = spawnCamera.yaw;
+        camera.rotation.x = spawnCamera.cameraPitch;
+        camera.updateProjectionMatrix();
       }}
       gl={{
         antialias: true,
@@ -382,8 +409,6 @@ function FirstPersonCanvas({
         controllerRef={controllerRef}
         interactive={interactive}
         physicsReady={physicsReady}
-        introActive={introActive}
-        onIntroComplete={onIntroComplete}
         activeSection={activeSection}
       />
     </Canvas>
@@ -401,13 +426,9 @@ function ensureRapierInit(): Promise<void> {
 
 export default function FirstPersonScene({
   interactive = true,
-  introActive = false,
-  onIntroComplete,
   activeSection = 'EXPLORE',
 }: {
   interactive?: boolean;
-  introActive?: boolean;
-  onIntroComplete?: () => void;
   activeSection?: ActivePage;
 }) {
   const bundleRef = useRef<PhysicsWorldBundle | null>(null);
@@ -442,9 +463,6 @@ export default function FirstPersonScene({
     };
   }, []);
 
-  const handleIntroComplete = useCallback(() => {
-    onIntroComplete?.();
-  }, [onIntroComplete]);
   const canvasPointerEnabled = interactive || activeSection === 'WORKS';
 
   if (error) {
@@ -468,8 +486,6 @@ export default function FirstPersonScene({
         controllerRef={controllerRef}
         interactive={interactive}
         physicsReady={ready}
-        introActive={introActive}
-        onIntroComplete={handleIntroComplete}
         activeSection={activeSection}
       />
     </div>

@@ -91,7 +91,13 @@ export default function TotalContributions({ total, sourceLabel }: TotalContribu
         onPointerEnter={triggerTotalGlitch}
       >
         <span className="github-total-contributions__layer github-total-contributions__layer--rolling">
-          <RollingNumber value={total} delay={0.08} loops={1} />
+          <RollingNumber
+            value={total}
+            loops={3}
+            durationScale={0.86}
+            digitDelay={0.044}
+            initialOpacity={1}
+          />
         </span>
         <span className="github-total-contributions__layer github-total-contributions__layer--glitch" aria-hidden>
           <GlitchTitle

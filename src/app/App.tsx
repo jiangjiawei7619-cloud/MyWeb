@@ -7,11 +7,25 @@ import AboutSection from '@/components/sections/AboutSection';
 import LogsSection from '@/components/sections/LogsSection';
 import FooterShell from '@/components/layout/FooterShell';
 import FirstPersonScene from '@/components/canvas/FirstPersonScene';
+import LoadingScreen from '@/components/loading/LoadingScreen';
 import { preloadExploreWorldAssets } from '@/lib/explore-world-preload';
 
+function shouldSkipInitialLoading(): boolean {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return (
+    params.get('skipLoading') === '1' ||
+    params.get('debugDepthFade') === '1' ||
+    params.get('debugFresnel') === '1' ||
+    params.get('debugMicroVariation') === '1'
+  );
+}
+
 export default function App() {
-  const appRevealed = true;
-  const introDone = true;
+  const skipInitialLoading = shouldSkipInitialLoading();
+  const [showLoading, setShowLoading] = useState(!skipInitialLoading);
+  const [appRevealed, setAppRevealed] = useState(skipInitialLoading);
+  const [introDone, setIntroDone] = useState(skipInitialLoading);
   const [activePage, setActivePage] = useState<ActivePage>('EXPLORE');
   const [exploreVisionReveal, setExploreVisionReveal] = useState(false);
   
@@ -21,6 +35,15 @@ export default function App() {
   const [exploreScroll, setExploreScroll] = useState(0);
   const mainRef = useRef<HTMLElement>(null);
   const previousPageRef = useRef<ActivePage>(activePage);
+
+  const handleLoadingEnter = useCallback(() => {
+    setAppRevealed(true);
+    setIntroDone(true);
+  }, []);
+
+  const handleLoadingComplete = useCallback(() => {
+    setShowLoading(false);
+  }, []);
 
   useEffect(() => {
     const removeUnlock = installAudioUnlockListeners();
@@ -195,6 +218,10 @@ export default function App() {
       activeSection={activePage}
     />
 
+    {showLoading && (
+      <LoadingScreen onEnter={handleLoadingEnter} onComplete={handleLoadingComplete} />
+    )}
+
     {exploreVisionReveal && (
       <div className="explore-vision-reveal pointer-events-none fixed inset-0 z-[9]" aria-hidden />
     )}
@@ -239,20 +266,21 @@ export default function App() {
           }}
           hideStatusReadout={isLogsPage}
           showExploreKeyHints={appRevealed}
+          playInitialBrandIntro={appRevealed}
         />
       </div>
 
       {/* Dynamic Route views rendered inside centered main view box */}
       <main
         ref={mainRef}
-        className={`relative z-10 min-h-0 w-full flex-1 px-4 sm:px-6 md:px-12 lg:px-20 xl:px-28 flex flex-col overflow-y-auto pb-28 md:pb-32 ${
+        className={`relative z-10 min-h-0 w-full flex-1 ${activePage === 'ABOUT' ? 'px-6 md:px-10' : 'px-4 sm:px-6 md:px-12 lg:px-20 xl:px-28'} flex flex-col overflow-y-auto pb-28 md:pb-32 ${
           activePage === 'LOGS' ? 'justify-start pt-28 md:pt-32' : 'justify-center pt-20 md:pt-24'
         } ${
           activePage === 'EXPLORE' || activePage === 'WORKS' ? 'pointer-events-none' : 'pointer-events-auto'
         }`}
       >
         <div
-          className={`w-full mx-auto ${activePage === 'LOGS' ? 'max-w-[1350px] overflow-visible' : 'max-w-7xl overflow-hidden'}`}
+          className={`w-full ${activePage === 'ABOUT' ? 'mx-0 max-w-none overflow-visible' : activePage === 'LOGS' ? 'mx-auto max-w-[1350px] overflow-visible' : 'mx-auto max-w-7xl overflow-hidden'}`}
         >
           <div
             key={activePage}
@@ -279,6 +307,7 @@ export default function App() {
       >
         <FooterShell
           hidePageNav={isLogsPage}
+          showAboutSocial={activePage === 'ABOUT'}
           onPrev={() => {
             const PAGELIST: ActivePage[] = ['EXPLORE', 'WORKS', 'LOGS', 'ABOUT'];
             const currentIndex = PAGELIST.indexOf(activePage);

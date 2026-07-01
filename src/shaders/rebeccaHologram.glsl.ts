@@ -26,21 +26,6 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
   uniform float uDistFalloffNear;
   uniform float uDistFalloffFar;
   uniform float uDistFalloffMin;
-  uniform float uReflect;
-  uniform float uReflectBoost;
-  uniform float uReflectGain;
-  uniform float uReflectFadeDepth;
-  uniform float uReflectDistNear;
-  uniform float uReflectDistFar;
-  uniform float uReflectDistStrength;
-  uniform float uReflectFresnelPower;
-  uniform float uReflectFresnelBoost;
-  uniform float uReflectBlurNear;
-  uniform float uReflectBlurFar;
-  uniform float uReflectBlurFogMix;
-  uniform float uReflectDimmer;
-  uniform float uReflectAlphaFloor;
-  uniform float uReflectBlurScale;
   uniform vec3 uCamPos;
   uniform float uSignalDropoutT;
   uniform float uSignalDropoutSteps;
@@ -95,54 +80,34 @@ export const rebeccaHologramCleanFrag = /* glsl */ `
 
     vec3 col = tex.rgb * uBrightness * uBaseBrightness * tone;
     float emissiveMask = neonMask;
-    if (uReflect < 0.5) {
-      float camDist = length(uCamPos - vWorldPos);
-      float distGain = mix(1.0, uDistFalloffMin, smoothstep(uDistFalloffNear, uDistFalloffFar, camDist));
-      float farKneeBoost = 1.0 + smoothstep(uDistFalloffNear, uDistFalloffFar, camDist) * 0.95;
+    float camDist = length(uCamPos - vWorldPos);
+    float distGain = mix(1.0, uDistFalloffMin, smoothstep(uDistFalloffNear, uDistFalloffFar, camDist));
+    float farKneeBoost = 1.0 + smoothstep(uDistFalloffNear, uDistFalloffFar, camDist) * 0.95;
 
-      float peak = max(max(col.r, col.g), col.b);
-      col /= (1.0 + peak * uHighlightKnee * farKneeBoost);
+    float peak = max(max(col.r, col.g), col.b);
+    col /= (1.0 + peak * uHighlightKnee * farKneeBoost);
 
-      float lumaCore = dot(col, vec3(0.299, 0.587, 0.114));
-      if (lumaCore > uLumaCap) {
-        col *= uLumaCap / lumaCore;
-      }
-
-      float bloomScale = uBloomBoost * distGain;
-      float pulse = 1.0 + sin(uTime * uGlowPulseSpeed) * uGlowPulseStrength;
-      float reducedPass = mix(1.0, 0.72, step(0.5, uCheapPass));
-      vec3 emissiveGlow = tex.rgb * emissiveMask * bloomScale * uEmissiveBoost * pulse * reducedPass;
-      col += emissiveGlow;
-
-      float lumaOut = dot(col, vec3(0.299, 0.587, 0.114));
-      float spillCap = uLumaCap * 1.22;
-      if (lumaOut > spillCap) {
-        col *= spillCap / lumaOut;
-      }
+    float lumaCore = dot(col, vec3(0.299, 0.587, 0.114));
+    if (lumaCore > uLumaCap) {
+      col *= uLumaCap / lumaCore;
     }
+
+    float bloomScale = uBloomBoost * distGain;
+    float pulse = 1.0 + sin(uTime * uGlowPulseSpeed) * uGlowPulseStrength;
+    float reducedPass = mix(1.0, 0.72, step(0.5, uCheapPass));
+    vec3 emissiveGlow = tex.rgb * emissiveMask * bloomScale * uEmissiveBoost * pulse * reducedPass;
+    col += emissiveGlow;
+
+    float lumaOut = dot(col, vec3(0.299, 0.587, 0.114));
+    float spillCap = uLumaCap * 1.22;
+    if (lumaOut > spillCap) {
+      col *= spillCap / lumaOut;
+    }
+
     float a = alpha * uOpacity * tone * uMix;
     float dropoutCut = activeBand * thinSlice * uSignalDropoutT;
     col *= 1.0 - dropoutCut * 0.28;
     a *= 1.0 - dropoutCut * 0.34;
-
-    if (uReflect > 0.5) {
-      col = tex.rgb * uBrightness * uBaseBrightness * tone * uReflectDimmer;
-      a = max(a, emissiveMask * uReflectAlphaFloor) * uReflectDimmer;
-      col *= 1.0 - dropoutCut * 0.2;
-      a *= 1.0 - dropoutCut * 0.22;
-
-      float belowGround = max(0.0, -vWorldPos.y);
-      float groundAlphaFade = 1.0 - smoothstep(0.0, uReflectFadeDepth, belowGround);
-      vec3 viewDir = normalize(uCamPos - vWorldPos);
-      float mirrorFresnel = pow(1.0 - clamp(dot(vec3(0.0, -1.0, 0.0), viewDir), 0.0, 1.0), uReflectFresnelPower);
-      float horizDist = length(vWorldPos.xz - uCamPos.xz);
-      float distFalloff = 1.0 - smoothstep(uReflectDistNear, uReflectDistFar, horizDist) * uReflectDistStrength;
-      float blurMix = smoothstep(uReflectBlurNear, uReflectBlurFar, horizDist) * uReflectBlurFogMix * uReflectBlurScale;
-
-      col *= distFalloff * mix(0.96, 1.0, mirrorFresnel);
-      col = mix(col, vec3(0.015, 0.01, 0.028), blurMix * 0.4);
-      a *= groundAlphaFade * mix(0.88, 0.98, mirrorFresnel);
-    }
 
     gl_FragColor = vec4(col, a);
   }
@@ -159,21 +124,6 @@ export const rebeccaHologramLayerFrag = /* glsl */ `
   uniform float uGlitchSteps;
   uniform float uLayerGain;
   uniform float uMix;
-  uniform float uReflect;
-  uniform float uReflectBoost;
-  uniform float uReflectGain;
-  uniform float uReflectFadeDepth;
-  uniform float uReflectDistNear;
-  uniform float uReflectDistFar;
-  uniform float uReflectDistStrength;
-  uniform float uReflectFresnelPower;
-  uniform float uReflectFresnelBoost;
-  uniform float uReflectBlurNear;
-  uniform float uReflectBlurFar;
-  uniform float uReflectBlurFogMix;
-  uniform float uReflectDimmer;
-  uniform float uReflectAlphaFloor;
-  uniform float uReflectBlurScale;
 
   varying vec2 vUv;
   varying vec3 vWorldPos;
@@ -243,26 +193,7 @@ export const rebeccaHologramLayerFrag = /* glsl */ `
     float grain = hash21(vUv * 480.0 + uTime * 40.0) * 0.06;
     col += grain;
 
-    float lum = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
     float a = tex.a * uMix;
-
-    if (uReflect > 0.5) {
-      col *= uReflectDimmer;
-      float emissiveMask = smoothstep(0.16, 0.68, lum);
-      a = max(a, emissiveMask * uReflectAlphaFloor * 0.72) * uReflectDimmer;
-
-      float belowGround = max(0.0, -vWorldPos.y);
-      float groundAlphaFade = 1.0 - smoothstep(0.0, uReflectFadeDepth, belowGround);
-      vec3 viewDir = normalize(uCamPos - vWorldPos);
-      float mirrorFresnel = pow(1.0 - clamp(dot(vec3(0.0, -1.0, 0.0), viewDir), 0.0, 1.0), uReflectFresnelPower);
-      float horizDist = length(vWorldPos.xz - uCamPos.xz);
-      float distFalloff = 1.0 - smoothstep(uReflectDistNear, uReflectDistFar, horizDist) * uReflectDistStrength;
-      float blurMix = smoothstep(uReflectBlurNear, uReflectBlurFar, horizDist) * uReflectBlurFogMix * uReflectBlurScale;
-
-      col *= distFalloff * mix(0.96, 1.0, mirrorFresnel);
-      col = mix(col, vec3(0.015, 0.01, 0.028), blurMix * 0.4);
-      a *= groundAlphaFade * mix(0.88, 0.98, mirrorFresnel);
-    }
 
     gl_FragColor = vec4(col, a);
   }

@@ -20,6 +20,8 @@ interface GlitchTitleProps {
   charSlotEm?: number;
   /** 空格占位宽度（em） */
   spaceSlotEm?: number;
+  /** 字符在占位槽内的水平对齐 */
+  charAlign?: 'left' | 'center';
 }
 
 const KATAKANA = 'ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ1234567890%@#&*+=!';
@@ -89,6 +91,7 @@ export default function GlitchTitle({
   glitchShadow,
   charSlotEm = 1.15,
   spaceSlotEm = 0.4,
+  charAlign = 'center',
 }: GlitchTitleProps) {
   const [charStates, setCharStates] = useState<CharState[]>(() =>
     english.split('').map((c) => ({ char: c, isGlitch: false, tone: 'english' as CharTone })),
@@ -316,7 +319,7 @@ export default function GlitchTitle({
         return (
         <span
           key={index}
-          className={`inline-block text-center transition-[transform,color] duration-75 ${
+          className={`inline-block ${charAlign === 'left' ? 'text-left' : 'text-center'} transition-[transform,color] duration-75 ${
             state.tone === 'japanese'
               ? japaneseToneClass
               : state.tone === 'glitch' || state.isGlitch

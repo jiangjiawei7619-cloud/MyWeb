@@ -148,7 +148,7 @@ function drawLabels(ctx: CanvasRenderingContext2D, w: number, h: number, rng: Rn
     const text = i === 0 ? pickA : i === 1 ? pickB : rng() > 0.5 ? pickA : pickB;
     const size = h * (0.10 + i * 0.035);
     const y = h * (0.63 + i * 0.085);
-    ctx.font = `900 ${size | 0}px monospace`;
+    ctx.font = `900 ${size | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
 
     // Neon-ish stroke.
     const base = i === 0 ? hue : hue + 20 + i * 12;
@@ -243,4 +243,3 @@ export function createHudScreenAtlas(): THREE.Texture {
 export function getHudScreenAtlasCellSize(): THREE.Vector2 {
   return new THREE.Vector2(1 / HUD_SCREEN_COLS, 1 / HUD_SCREEN_ROWS);
 }
-

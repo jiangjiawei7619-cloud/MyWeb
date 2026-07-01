@@ -35,44 +35,6 @@ import {
 import { useRenderBudget } from '@/world/RenderBudgetSystem';
 import { getWorldFeatureFlags } from '@/lib/world-feature-flags';
 
-function createInactiveMirrorUniforms() {
-  return {
-    uReflectFadeDepth: { value: 1 },
-    uReflectDistNear: { value: 0 },
-    uReflectDistFar: { value: 1 },
-    uReflectDistStrength: { value: 0 },
-    uReflectFresnelPower: { value: 1 },
-    uReflectFresnelBoost: { value: 1 },
-    uReflectBlurNear: { value: 0 },
-    uReflectBlurFar: { value: 1 },
-    uReflectBlurFogMix: { value: 0 },
-    uCamPos: { value: new THREE.Vector3() },
-  };
-}
-
-function createInactiveBrickUniforms() {
-  return {
-    uBrickPitch: { value: 1 },
-    uBrickGap: { value: 0 },
-    uBrickOrigin: { value: new THREE.Vector2() },
-    uReflectSurfacePass: { value: 0 },
-    uSeamReflectGain: { value: 0 },
-    uSurfaceReflectGain: { value: 0 },
-    uSeamBlurScale: { value: 1 },
-    uSurfaceBlurScale: { value: 1 },
-    uUseEdgeGapMask: { value: 0 },
-    uGapWidthFrac: { value: 0 },
-    uGapFeather: { value: 0 },
-    uReflectionSeamDistortion: { value: 0 },
-    uSeamDistortionNoiseScale: { value: 1 },
-    uSeamDistortionSpeed: { value: 0 },
-    uDebugDistortedReflection: { value: 0 },
-  };
-}
-
-const mirrorUniforms = createInactiveMirrorUniforms();
-const brickGridUniforms = createInactiveBrickUniforms();
-
 type NeonSignTier = 'hero' | 'normal' | 'background';
 
 type NeonSignRenderInfo = {
@@ -192,14 +154,12 @@ function buildSignGeometry(signs: ExploreNeonSign[], renderInfo: NeonSignRenderI
   return g;
 }
 
-function buildSignMatrices(signs: ExploreNeonSign[], mirror = false) {
+function buildSignMatrices(signs: ExploreNeonSign[]) {
   const dummy = new THREE.Object3D();
   return signs.map((s) => {
-    const y = mirror ? -s.y : s.y;
-    const sy = mirror ? -s.h : s.h;
-    dummy.position.set(s.x, y, s.z);
+    dummy.position.set(s.x, s.y, s.z);
     dummy.rotation.set(0, s.rotationY, 0);
-    dummy.scale.set(s.w, sy, 1);
+    dummy.scale.set(s.w, s.h, 1);
     dummy.updateMatrix();
     return dummy.matrix.clone();
   });
@@ -464,7 +424,7 @@ function ExploreNeonSigns({
   const count = signs.length;
 
   const geometry = useMemo(() => buildSignGeometry(signs, renderInfo), [signs, renderInfo]);
-  const matrices = useMemo(() => buildSignMatrices(signs, false), [signs]);
+  const matrices = useMemo(() => buildSignMatrices(signs), [signs]);
 
   useEffect(() => {
     applyInstancedMatrices(meshRef.current, matrices);
@@ -495,7 +455,6 @@ function ExploreNeonSigns({
         neonSignCount: count,
         emissiveMaterialsCount: 1,
         bloomEnabledCount: tier === 'hero' ? count : 0,
-        reflectionLayerCount: tier === 'hero' ? count : 0,
       }}
     />
   );
@@ -645,12 +604,7 @@ function ExploreCyberCityTextured({
       uAccent: { value: new THREE.Color(EXPLORE_CITY_PALETTE.accent) },
       uFog: { value: new THREE.Color(EXPLORE_CITY_PALETTE.fog) },
       uIntensity: { value: EXPLORE_CITY_PALETTE.intensity },
-      uReflect: { value: 0 },
-      uReflectBoost: { value: 1 },
-      uReflectGain: { value: 1 },
-      uNeonReflect: { value: 0 },
-      ...mirrorUniforms,
-      ...brickGridUniforms,
+      uCamPos: { value: new THREE.Vector3() },
       ...createDistanceLodUniforms(),
       ...buildingTextureUniforms,
     }),
@@ -682,11 +636,7 @@ function ExploreCyberCityTextured({
   const signUniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uReflect: { value: 0 },
-      uReflectBoost: { value: 1 },
-      uReflectGain: { value: 1 },
-      ...mirrorUniforms,
-      ...brickGridUniforms,
+      uCamPos: { value: new THREE.Vector3() },
       ...createDistanceLodUniforms(),
       uGlitchDuration: { value: POSTER_GLITCH_BURST.duration },
       uGlitchSteps: { value: POSTER_GLITCH_BURST.steps },

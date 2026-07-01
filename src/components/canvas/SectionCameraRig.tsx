@@ -20,7 +20,6 @@ import {
 
 type SectionCameraRigProps = {
   activeSection: ActivePage;
-  introActive: boolean;
   controllerRef?: RefObject<FirstPersonController | null>;
   exploreEntryActiveRef?: RefObject<boolean>;
 };
@@ -92,12 +91,12 @@ function commitExploreFpsHandoff(
   camera.fov = targetFov;
   camera.updateProjectionMatrix();
   controller.commitExploreCameraHandoff(yaw, cameraPitch, hydrateStretch);
+  controller.settleSpawnPhysics(6);
   controller.syncCamera(camera, 0, 1);
 }
 
 export default function SectionCameraRig({
   activeSection,
-  introActive,
   controllerRef,
   exploreEntryActiveRef,
 }: SectionCameraRigProps) {
@@ -131,15 +130,11 @@ export default function SectionCameraRig({
 
   useLayoutEffect(() => {
     if (!exploreEntryActiveRef) return;
-    if (introActive) {
-      exploreEntryActiveRef.current = false;
-      return;
-    }
     // Block physics on the same frame we switch to EXPLORE (before useFrame starts the transition).
     if (activeSection === 'EXPLORE' && lastSectionRef.current !== 'EXPLORE') {
       exploreEntryActiveRef.current = true;
     }
-  }, [activeSection, introActive, exploreEntryActiveRef]);
+  }, [activeSection, exploreEntryActiveRef]);
 
   useEffect(() => {
     const onPointerMove = (event: PointerEvent) => {
@@ -158,17 +153,6 @@ export default function SectionCameraRig({
   useFrame(({ clock }, delta) => {
     const now = clock.elapsedTime;
     const perspCamera = camera instanceof THREE.PerspectiveCamera ? camera : null;
-
-    if (introActive) {
-      lastSectionRef.current = activeSection;
-      transitionRef.current = null;
-      fovTransitionRef.current = null;
-      exploreEntryRef.current = null;
-      if (exploreEntryActiveRef) exploreEntryActiveRef.current = false;
-      targetMouseRef.current.set(0, 0);
-      smoothMouseRef.current.lerp(targetMouseRef.current, 1 - Math.exp(-delta * 4));
-      return;
-    }
 
     if (activeSection === 'EXPLORE') {
       const enteredFromOther =

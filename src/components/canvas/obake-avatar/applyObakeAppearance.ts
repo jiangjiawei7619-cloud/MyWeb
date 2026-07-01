@@ -1,10 +1,15 @@
 import * as THREE from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import { getObakeAvatarConfig, OBAKE_AVATAR_LAYER } from '@/lib/obake-avatar-config';
+import {
+  eraseLegacyFaceFeatures,
+  type LoadingFaceFeatureBounds,
+} from '@/lib/loading-face-visual';
 
 export function applyObakeRenderLayer(root: THREE.Object3D) {
   root.traverse((obj) => {
     obj.layers.set(OBAKE_AVATAR_LAYER);
+    obj.layers.enable(0);
   });
 }
 
@@ -29,13 +34,7 @@ function isCanvasImageSource(image: unknown): image is CanvasImageSource {
   );
 }
 
-type FaceFeatureComponent = {
-  area: number;
-  cx: number;
-  cy: number;
-  radius: number;
-  pixels: number[];
-};
+type FaceFeatureComponent = LoadingFaceFeatureBounds & { area: number };
 
 function isDarkFeaturePixel(data: Uint8ClampedArray, pixelIndex: number) {
   const i = pixelIndex * 4;
@@ -46,11 +45,11 @@ function isDarkFeaturePixel(data: Uint8ClampedArray, pixelIndex: number) {
   return a > 180 && r < 58 && g < 58 && b < 58;
 }
 
-function collectFaceFeatureComponents(
+function collectFaceFeatures(
   data: Uint8ClampedArray,
   width: number,
   height: number,
-): FaceFeatureComponent[] {
+): { eyes: FaceFeatureComponent[]; legacyMouths: FaceFeatureComponent[] } {
   const minX = Math.floor(width * 0.58);
   const maxX = Math.floor(width * 0.88);
   const minY = Math.floor(height * 0.12);
@@ -120,16 +119,17 @@ function collectFaceFeatureComponents(
     }
   }
 
-  const eyes = components.sort((a, b) => b.area - a.area).slice(0, 2);
-  const eyeBottom = Math.max(...eyes.map((eye) => eye.cy), minY);
-  const mouth = components
-    .filter((feature) => !eyes.includes(feature) && feature.cy > eyeBottom)
+  const eyes = components
     .sort((a, b) => b.area - a.area)
-    .slice(0, 2);
-  return [...eyes, ...mouth];
+    .slice(0, 2)
+    .sort((a, b) => a.cx - b.cx);
+  const eyeSet = new Set(eyes);
+  const legacyMouths = components.filter((feature) => !eyeSet.has(feature));
+
+  return { eyes, legacyMouths };
 }
 
-function createThemeFaceTexture(map: THREE.Texture, featureColor: THREE.Color, intensity: number) {
+function createThemeFaceTexture(map: THREE.Texture) {
   const image = map.image;
   if (!isCanvasImageSource(image) || !('width' in image) || !('height' in image)) return map;
 
@@ -144,47 +144,16 @@ function createThemeFaceTexture(map: THREE.Texture, featureColor: THREE.Color, i
   if (!ctx) return map;
 
   ctx.drawImage(image, 0, 0, width, height);
-  const original = ctx.getImageData(0, 0, width, height);
-  const features = collectFaceFeatureComponents(original.data, width, height);
-  if (features.length === 0) return map;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const { eyes, legacyMouths } = collectFaceFeatures(imageData.data, width, height);
 
-  const rgb = `${Math.round(featureColor.r * 255)}, ${Math.round(featureColor.g * 255)}, ${Math.round(featureColor.b * 255)}`;
-  const glow = THREE.MathUtils.clamp(intensity, 0.4, 2.8);
-  for (const feature of features) {
-    const glowRadiusX = feature.radius * 1.25;
-    const glowRadiusY = feature.radius * 1.05;
-    const gradient = ctx.createRadialGradient(
-      feature.cx,
-      feature.cy,
-      feature.radius * 0.12,
-      feature.cx,
-      feature.cy,
-      glowRadiusX,
-    );
-    gradient.addColorStop(0, `rgba(${rgb}, ${0.08 + glow * 0.035})`);
-    gradient.addColorStop(0.55, `rgba(${rgb}, ${0.045 + glow * 0.025})`);
-    gradient.addColorStop(1, `rgba(${rgb}, 0)`);
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.ellipse(feature.cx, feature.cy, glowRadiusX, glowRadiusY, 0, 0, Math.PI * 2);
-    ctx.fill();
+  if (eyes.length > 0 || legacyMouths.length > 0) {
+    eraseLegacyFaceFeatures(imageData.data, width, height, eyes, legacyMouths);
+    ctx.putImageData(imageData, 0, 0);
   }
-
-  const tinted = ctx.getImageData(0, 0, width, height);
-  const fill = featureColor.clone().lerp(new THREE.Color('#ffd5d4'), 0.22);
-  for (const feature of features) {
-    for (const pixel of feature.pixels) {
-      const i = pixel * 4;
-      tinted.data[i] = Math.round(fill.r * 255);
-      tinted.data[i + 1] = Math.round(fill.g * 255);
-      tinted.data[i + 2] = Math.round(fill.b * 255);
-      tinted.data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(tinted, 0, 0);
 
   const texture = new THREE.CanvasTexture(canvas);
-  texture.name = `${map.name || 'obake'}-theme-face`;
+  texture.name = `${map.name || 'obake'}-body-faceless`;
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.flipY = map.flipY;
   texture.wrapS = map.wrapS;
@@ -202,7 +171,6 @@ function createThemeFaceTexture(map: THREE.Texture, featureColor: THREE.Color, i
 
 export function applyObakeAppearance(vrm: VRM) {
   const cfg = getObakeAvatarConfig();
-  const faceColor = new THREE.Color(cfg.emissiveTint);
 
   applyObakeRenderLayer(vrm.scene);
 
@@ -216,8 +184,7 @@ export function applyObakeAppearance(vrm: VRM) {
     const sources = Array.isArray(obj.material) ? obj.material : [obj.material];
     const materials = sources.map((src) => {
       const map = src ? extractColorMap(src) : null;
-      const themedMap =
-        map && cfg.useEmissiveGlow ? createThemeFaceTexture(map, faceColor, cfg.emissiveIntensity) : map;
+      const themedMap = map && cfg.useEmissiveGlow ? createThemeFaceTexture(map) : map;
       if (themedMap) {
         themedMap.colorSpace = THREE.SRGBColorSpace;
       }

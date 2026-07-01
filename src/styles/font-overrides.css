@@ -1,0 +1,66 @@
+@layer theme {
+  :root,
+  :host {
+    --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-space: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --english-body-tracking: -0.045em;
+  }
+}
+
+:where(body, button, input, textarea, select) {
+  font-family: var(--font-sans);
+}
+
+:where(.font-sans, .font-mono, .font-space, .font-sans *, .font-mono *, .font-space *):not(
+    .material-symbols-outlined
+  ) {
+  font-family: var(--font-sans);
+  letter-spacing: var(--english-body-tracking) !important;
+}
+
+:where(.tracking-wide, .tracking-wider, .tracking-widest, [class*="tracking-["]):not(
+    .material-symbols-outlined
+  ) {
+  letter-spacing: var(--english-body-tracking) !important;
+}
+
+.loading-screen {
+  font-family: var(--font-sans);
+  letter-spacing: var(--english-body-tracking);
+}
+
+.works-fit-debug-label {
+  font-family: var(--font-sans);
+  letter-spacing: var(--english-body-tracking);
+}
+
+.about-intro-columns-wrap {
+  margin-top: 5.65rem;
+}
+
+.about-intro-columns > * {
+  max-width: 80%;
+}
+
+.about-intro-columns > :nth-child(2) {
+  margin-left: -5rem;
+}
+
+.about-social-footer-nav {
+  transform: translateX(1rem);
+}
+
+@media (max-width: 767px) {
+  .about-intro-columns > * {
+    max-width: 100%;
+  }
+
+  .about-intro-columns > :nth-child(2) {
+    margin-left: 0;
+  }
+
+  .about-social-footer-nav {
+    transform: none;
+  }
+}

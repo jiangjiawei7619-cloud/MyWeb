@@ -113,7 +113,7 @@ function useCodeTexture() {
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#0a0000';
     ctx.fillRect(0, 0, 128, 128);
-    ctx.font = '10px monospace';
+    ctx.font = '10px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.fillStyle = '#d4af37';
     const chars = '01アイウエオ{}[]<>;/=';
     for (let y = 0; y < 128; y += 12) {

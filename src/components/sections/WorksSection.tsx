@@ -329,14 +329,14 @@ export default function WorksSection({ projects }: WorksSectionProps) {
           <button
             onClick={handlePrev}
             disabled={isTransitioning}
-            className="px-4 py-1.5 bg-neutral-900 border border-white/10 hover:border-[#ff5357]/50 rounded text-xs font-mono font-bold text-[#ffb3af] hover:text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
+            className="px-4 py-1.5 bg-neutral-900 border border-white/10 hover:border-[#ff5357]/50 rounded text-xs font-mono font-medium text-[#ffb3af] hover:text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
           >
             ← PREV
           </button>
           <button
             onClick={handleNext}
             disabled={isTransitioning}
-            className="px-4 py-1.5 bg-neutral-900 border border-white/10 hover:border-[#ff5357]/50 rounded text-xs font-mono font-bold text-[#ffb3af] hover:text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
+            className="px-4 py-1.5 bg-neutral-900 border border-white/10 hover:border-[#ff5357]/50 rounded text-xs font-mono font-medium text-[#ffb3af] hover:text-white transition-all cursor-pointer disabled:opacity-50 shrink-0"
           >
             NEXT →
           </button>
@@ -354,9 +354,9 @@ export default function WorksSection({ projects }: WorksSectionProps) {
                 key={project.id}
                 onClick={() => transitionToProject(idx)}
                 disabled={isTransitioning}
-                className={`relative rounded-full py-1.5 px-4 font-mono text-[10px] md:text-[11px] font-bold tracking-widest transition-colors duration-300 select-none cursor-pointer outline-none border-none z-10 disabled:cursor-not-allowed ${
+                className={`relative rounded-full py-1.5 px-4 font-mono text-[10px] md:text-[11px] font-medium tracking-widest transition-colors duration-300 select-none cursor-pointer outline-none border-none z-10 disabled:cursor-not-allowed ${
                   isActive
-                    ? 'text-black font-black saturate-150 drop-shadow-[0_0_3px_rgba(0,0,0,0.4)]'
+                    ? 'text-black font-semibold saturate-150 drop-shadow-[0_0_3px_rgba(0,0,0,0.4)]'
                     : 'text-[#ffb3af] hover:text-[#ffdad8] hover:bg-white/5'
                 }`}
               >

@@ -28,7 +28,7 @@ const DEFAULT_RENDER_FLAGS: WorldRenderFlags = {
   enableBuildingHardCulling: false,
   enablePosterHardCulling: false,
   enableNeonHardCulling: false,
-  enableFarObjectSoftFade: true,
+  enableFarObjectSoftFade: false,
   enableShaderDetailScaling: true,
   enableRenderBudgetQualityScaling: true,
   enableCullingDebug: false,

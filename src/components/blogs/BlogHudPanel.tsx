@@ -1,6 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
-
-const HUD_ENTRY_SETTLE_MS = 760;
+import { type ReactNode } from 'react';
 
 type BlogHudPanelProps = {
   children: ReactNode;
@@ -19,24 +17,11 @@ export default function BlogHudPanel({
   header,
   variant = 'cyan',
 }: BlogHudPanelProps) {
-  const [entryIdle, setEntryIdle] = useState(!entryAnimation);
-
-  useEffect(() => {
-    if (!entryAnimation) {
-      setEntryIdle(true);
-      return;
-    }
-
-    setEntryIdle(false);
-    const entryTimer = window.setTimeout(() => setEntryIdle(true), HUD_ENTRY_SETTLE_MS);
-
-    return () => window.clearTimeout(entryTimer);
-  }, [entryAnimation, entryKey]);
-
-  const entryClasses = entryAnimation ? `hud-matrix-panel is-entering ${entryIdle ? 'is-idle' : ''}` : '';
+  const entryClasses = entryAnimation ? 'hud-matrix-panel is-entering' : '';
+  const panelKey = entryAnimation ? `hud-entry-${String(entryKey ?? 'static')}` : undefined;
 
   return (
-    <section className={`blog-hud-panel blog-hud-panel--${variant} ${entryClasses} ${className}`}>
+    <section key={panelKey} className={`blog-hud-panel blog-hud-panel--${variant} ${entryClasses} ${className}`}>
       {entryAnimation && <span className="hud-frame-reveal-layer" aria-hidden />}
       <span className="blog-hud-corner blog-hud-corner--tl" aria-hidden />
       <span className="blog-hud-corner blog-hud-corner--tr" aria-hidden />

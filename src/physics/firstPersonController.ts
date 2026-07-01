@@ -229,6 +229,34 @@ export class FirstPersonController {
     this.smoothPush = 0;
     this.smoothBobY = 0;
     this.bobPhase = 0;
+    this.syncAvatarGroundedBaseline();
+  }
+
+  /** 对齐着地基准，避免入场/切页恢复物理时误触发落地动作 */
+  private syncAvatarGroundedBaseline() {
+    this.grounded = this.isGrounded();
+    this.prevGroundedForAvatar = this.grounded;
+    this.avatarLandPulse = false;
+  }
+
+  private syncBodyDisplayState() {
+    const t = this.playerBody.translation();
+    this.prevBodyPos.set(t.x, t.y, t.z);
+    this.currBodyPos.copy(this.prevBodyPos);
+    this.smoothBodyY = t.y;
+    this.bodyPosInitialized = true;
+    this.interpBodyPos.set(t.x, t.y, t.z);
+    this.cameraPivotPos.copy(this.interpBodyPos).setY(t.y + THIRD_PERSON_PIVOT_Y);
+    this.syncAvatarGroundedBaseline();
+  }
+
+  /** 加载/入场前预模拟落地，避免角色从半空掉下来 */
+  settleSpawnPhysics(stepCount = 20) {
+    for (let i = 0; i < stepCount; i += 1) {
+      this.fixedUpdate();
+    }
+    this.playerBody.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    this.syncBodyDisplayState();
   }
 
   /** 过渡终点交接：传入已含 THIRD_PERSON_PITCH_BIAS 的相机 pitch */
@@ -565,6 +593,10 @@ export class FirstPersonController {
 
   isPlayerGrounded(): boolean {
     return this.grounded;
+  }
+
+  getLookYaw(): number {
+    return this.yaw;
   }
 
   getVerticalVelocity(): number {

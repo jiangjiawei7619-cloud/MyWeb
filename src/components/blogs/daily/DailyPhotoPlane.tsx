@@ -282,6 +282,7 @@ function DailyPhotoPlane({
     const centerColumn = (config.columns - 1) * 0.5;
     const seed = hashPhotoId(`${photo.id}:${sourceIndex}`);
     const entryDelay =
+      DAILY_GLITCH_REVEAL_CONFIG.entryDelay +
       row * DAILY_GLITCH_REVEAL_CONFIG.entryStaggerBase +
       Math.abs(column - centerColumn) * 0.024 +
       seed * DAILY_GLITCH_REVEAL_CONFIG.entryJitter;

@@ -35,7 +35,7 @@ function neonStroke(
   hue: number,
   rng: Rng,
 ) {
-  ctx.font = `800 ${size | 0}px "Arial Black", "Impact", sans-serif`;
+  ctx.font = `800 ${size | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   const layers = [
     { blur: 28, alpha: 0.22, hueOff: -18, light: 58 },
     { blur: 14, alpha: 0.38, hueOff: -8, light: 62 },
@@ -99,10 +99,10 @@ function paintPoster1(ctx: CanvasRenderingContext2D, w: number, h: number, seed:
     ctx.lineTo(w * rng(), h * rng());
     ctx.stroke();
   }
-  ctx.font = `700 ${h * 0.18 | 0}px monospace`;
+  ctx.font = `700 ${h * 0.18 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255, 180, 120, 0.9)';
   ctx.fillText('404', w * 0.12, h * 0.55);
-  ctx.font = `${h * 0.045 | 0}px monospace`;
+  ctx.font = `${h * 0.045 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
   ctx.fillText('REALITY NOT FOUND', w * 0.1, h * 0.64);
   noiseRects(ctx, rng, w, h, 22);
@@ -134,7 +134,7 @@ function paintPoster3(ctx: CanvasRenderingContext2D, w: number, h: number, seed:
     ctx.fillStyle = `rgba(${200 + rng() * 55 | 0},${40 + rng() * 30 | 0},${50 + rng() * 40 | 0},0.55)`;
     ctx.fillRect(w * rng() * 0.3, h * (0.1 + y * 0.07), w * (0.5 + rng() * 0.5), h * 0.035);
   }
-  ctx.font = `600 ${h * 0.09 | 0}px monospace`;
+  ctx.font = `600 ${h * 0.09 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255, 230, 200, 0.88)';
   ctx.fillText('信号 LOST', w * 0.1, h * 0.88);
   noiseRects(ctx, rng, w, h, 35);
@@ -172,7 +172,7 @@ function paintPoster5(ctx: CanvasRenderingContext2D, w: number, h: number, seed:
     ctx.fillStyle = `rgba(255,${80 + rng() * 120 | 0},${40 + rng() * 60 | 0},${0.15 + rng() * 0.5})`;
     ctx.fillRect(x, 0, 1 + rng() * 3, h);
   }
-  ctx.font = `900 ${h * 0.14 | 0}px sans-serif`;
+  ctx.font = `900 ${h * 0.14 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
   ctx.fillText('GLITCH', w * 0.1, h * 0.48);
   ctx.fillStyle = 'rgba(255, 80, 60, 0.95)';
@@ -185,7 +185,7 @@ function paintPoster6(ctx: CanvasRenderingContext2D, w: number, h: number, seed:
   fillBase(ctx, w, h, 20);
   ctx.fillStyle = 'rgba(180, 30, 45, 0.25)';
   ctx.fillRect(0, h * 0.62, w, h * 0.38);
-  ctx.font = `${h * 0.065 | 0}px monospace`;
+  ctx.font = `${h * 0.065 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255, 200, 170, 0.85)';
   const chars = 'アイウエオカキクケコサシスセソ';
   for (let i = 0; i < 8; i++) {
@@ -208,7 +208,7 @@ function paintPoster7(ctx: CanvasRenderingContext2D, w: number, h: number, seed:
     ctx.closePath();
     ctx.fill();
   }
-  ctx.font = `800 ${h * 0.1 | 0}px sans-serif`;
+  ctx.font = `800 ${h * 0.1 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255, 240, 220, 0.9)';
   ctx.fillText('PULSE', w * 0.14, h * 0.52);
   scanlines(ctx, w, h);
@@ -221,7 +221,7 @@ function paintPoster8(ctx: CanvasRenderingContext2D, w: number, h: number, seed:
     ctx.fillStyle = `rgba(${220 + band * 7},${40 + band * 12},${50},${0.35 + rng() * 0.3})`;
     ctx.fillRect(0, h * (0.12 + band * 0.16), w, h * 0.07);
   }
-  ctx.font = `700 ${h * 0.075 | 0}px monospace`;
+  ctx.font = `700 ${h * 0.075 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255,255,255,0.7)';
   ctx.fillText('[ DATA CORRUPT ]', w * 0.08, h * 0.9);
   noiseRects(ctx, rng, w, h, 30);
@@ -248,7 +248,7 @@ function paintPoster10(ctx: CanvasRenderingContext2D, w: number, h: number, seed
     ctx.fillStyle = `rgba(255,${50 + rng() * 100 | 0},${40 + rng() * 50 | 0},${rng() * 0.8})`;
     ctx.fillRect(rng() * w, rng() * h, 2 + rng() * 8, 2 + rng() * 4);
   }
-  ctx.font = `900 ${h * 0.16 | 0}px "Arial Black", sans-serif`;
+  ctx.font = `900 ${h * 0.16 | 0}px "Helvetica Neue", Helvetica, Arial, sans-serif`;
   ctx.fillStyle = 'rgba(255, 60, 55, 0.92)';
   ctx.fillText('RAW', w * 0.15, h * 0.58);
   scanlines(ctx, w, h);

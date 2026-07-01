@@ -48,10 +48,10 @@ function makeFallbackTexture(photo: DailyPhoto, index: number) {
 
     ctx.globalAlpha = 0.85;
     ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
-    ctx.font = '700 28px monospace';
+    ctx.font = '700 28px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.fillStyle = accent;
     ctx.fillText('BROKEN_SIGNAL', 38, 132);
-    ctx.font = '600 15px monospace';
+    ctx.font = '600 15px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.76)';
     ctx.fillText(photo.title.toUpperCase().slice(0, 28), 38, 164);
     ctx.fillStyle = 'rgba(156,248,255,0.72)';
@@ -261,7 +261,7 @@ export default function DailyPhotoWallScene({
     const handleWheel = (event: WheelEvent) => {
       if (!active) return;
       event.preventDefault();
-      applyDelta(event.deltaY, 0.003);
+      applyDelta(event.deltaY, 0.0039);
     };
 
     const handlePointerDown = (event: PointerEvent) => {
@@ -276,7 +276,7 @@ export default function DailyPhotoWallScene({
       if (!pointerActive || event.pointerId !== pointerId) return;
       const deltaY = lastPointerY - event.clientY;
       lastPointerY = event.clientY;
-      applyDelta(deltaY, 0.014);
+      applyDelta(deltaY, 0.0182);
     };
 
     const handlePointerEnd = (event: PointerEvent) => {

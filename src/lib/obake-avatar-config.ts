@@ -5,10 +5,7 @@ import { CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS } from '@/physics/rapier-config';
 /** 刚体中心 → 脚底（胶囊体落地时） */
 export const AVATAR_FOOT_Y_OFFSET = -(CAPSULE_HALF_HEIGHT + CAPSULE_RADIUS);
 
-/**
- * 独立渲染层 — MeshReflector 虚拟相机默认只看 layer 0，
- * 角色放此层可避免地面倒影叠在身体上像阴影盖住。
- */
+/** Dedicated render layer for the avatar. */
 export const OBAKE_AVATAR_LAYER = 1;
 
 export type ObakeAvatarDebugConfig = {

@@ -94,7 +94,13 @@ export default function LeetCodeStatsPanel({ totalSolved, difficulty }: LeetCode
           onPointerEnter={triggerTotalGlitch}
         >
           <span className="leetcode-total-solved__layer leetcode-total-solved__layer--rolling">
-            <RollingNumber value={totalSolved} />
+            <RollingNumber
+              value={totalSolved}
+              loops={3}
+              durationScale={0.86}
+              digitDelay={0.044}
+              initialOpacity={1}
+            />
           </span>
           <span className="leetcode-total-solved__layer leetcode-total-solved__layer--glitch" aria-hidden>
             <GlitchTitle

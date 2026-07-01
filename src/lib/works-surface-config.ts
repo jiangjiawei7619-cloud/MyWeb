@@ -40,21 +40,6 @@ export const WORKS_SURFACE_CONFIG = {
   cameraVerticalOffset: 0.4,
 } as const;
 
-/** Works 湿地面几何镜像 — 对齐全息海报浅层湿面衰减（非楼宇深 fade） */
-export const WORKS_SURFACE_REFLECT = {
-  reflectGain: 0.58,
-  reflectBoost: 1.12,
-  reflectDimmer: 0.72,
-  reflectAlphaFloor: 0.018,
-  reflectBlurScale: 0.28,
-  /** 沿立面法线外推，避免与 building08 盒体镜像暗面 z-fight */
-  reflectForwardOffset: 0.04,
-  /** 倒影基色 — 暗 UI 块，非红色扫描条 */
-  panelColor: '#06060c',
-  /** 标题区轻微冷色点缀（湿面倒影，非面板本体） */
-  accentColor: '#4a8a96',
-} as const;
-
 export type WorksSurfaceLayout = {
   faceSize: { width: number; height: number };
   panelWidth: number;

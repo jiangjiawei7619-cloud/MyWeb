@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { FirstPersonController } from '@/physics/firstPersonController';
-import { CAMERA_BASE_FOV, CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET_Y } from '@/physics/rapier-config';
+import { CAMERA_BASE_FOV, CAPSULE_HALF_HEIGHT, CAPSULE_RADIUS, EYE_OFFSET_Y, THIRD_PERSON_DISTANCE, THIRD_PERSON_PITCH_BIAS, THIRD_PERSON_PIVOT_Y } from '@/physics/rapier-config';
 
 export const EXPLORE_INTRO_DURATION = 0.95;
 
@@ -13,7 +13,7 @@ const eyeY = spawnY + EYE_OFFSET_Y;
 const START = new THREE.Vector3(0, eyeY + 0.55, 2.6);
 const END = new THREE.Vector3(0, eyeY, 0);
 
-/** 与 FirstPersonController 相同的 YXZ 朝向模型 */
+/** 与 FirstPersonController 相同的 YXZ 朝向模型 — 面朝城市（-Z），镜头在身后 */
 const START_LOOK = new THREE.Vector3(0, eyeY + 0.08, -14);
 const END_LOOK = new THREE.Vector3(0, eyeY, -14);
 
@@ -52,6 +52,31 @@ export function lookTargetFromYawPitch(
 
 const START_ORIENT = yawPitchFromLookAt(START, START_LOOK);
 const END_ORIENT = yawPitchFromLookAt(END, END_LOOK);
+
+/** 进入网站默认视角抬高（弧度） */
+export const EXPLORE_SPAWN_PITCH_LIFT = (20 * Math.PI) / 180;
+
+export const EXPLORE_SPAWN_ORIENT = {
+  yaw: END_ORIENT.yaw,
+  pitch: END_ORIENT.pitch + EXPLORE_SPAWN_PITCH_LIFT,
+};
+
+/** 进入网站时的第三人称镜头 — 与 syncCamera 静止站位一致 */
+export function getExploreSpawnThirdPersonCamera() {
+  const pivotY = spawnY + THIRD_PERSON_PIVOT_Y;
+  const { yaw, pitch } = EXPLORE_SPAWN_ORIENT;
+  const cameraPitch = pitch + THIRD_PERSON_PITCH_BIAS;
+  const viewForward = new THREE.Vector3(
+    -Math.sin(yaw) * Math.cos(cameraPitch),
+    Math.sin(cameraPitch),
+    -Math.cos(yaw) * Math.cos(cameraPitch),
+  );
+  const position = new THREE.Vector3(0, pivotY, 0).addScaledVector(
+    viewForward,
+    -THIRD_PERSON_DISTANCE,
+  );
+  return { position, yaw, cameraPitch, fov: CAMERA_BASE_FOV };
+}
 
 function applyYawPitch(camera: THREE.PerspectiveCamera, yaw: number, pitch: number) {
   camera.rotation.order = 'YXZ';

@@ -132,7 +132,6 @@ export function createBuildingTextureUniforms(textures: BuildingTextureSet) {
     uFacadeIntensity: { value: EXPLORE_BUILDING_FACADE.intensity },
     uBandCoverage: { value: EXPLORE_BUILDING_BANDS.coverage },
     uBandIntensity: { value: EXPLORE_BUILDING_BANDS.intensity },
-    uBandReflectIntensity: { value: EXPLORE_BUILDING_BANDS.reflectIntensity },
     uBandBreatheSpeed: { value: EXPLORE_BUILDING_BANDS.breatheSpeed },
     uBandBreatheDepth: { value: EXPLORE_BUILDING_BANDS.breatheDepth },
     uBandWidth: { value: EXPLORE_BUILDING_BANDS.bandWidth },

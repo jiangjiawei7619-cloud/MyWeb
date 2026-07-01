@@ -26,7 +26,7 @@ function KeyCap({
   return (
     <div
       className={
-        'explore-key-cap flex items-center justify-center rounded-md bg-[#ff5357] font-bold text-black ' +
+        'explore-key-cap flex items-center justify-center rounded-md bg-[#ff5357] font-medium text-black ' +
         'shadow-[0_0_10px_rgba(255,83,87,0.45)] ' +
         (wide ? 'h-7 min-w-[4rem] px-2.5 text-[9px] tracking-[0.2em] ' : 'h-7 w-7 ') +
         (boot ? 'explore-key-cap--boot' : '')
@@ -52,7 +52,7 @@ function HintLabel({
   return (
     <span
       className={
-        'explore-key-label font-mono text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#ff5357] leading-none ' +
+        'explore-key-label font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-[#ff5357] leading-none ' +
         (boot ? 'explore-key-label--boot' : '') +
         (className ? ` ${className}` : '')
       }

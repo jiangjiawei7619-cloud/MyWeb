@@ -25,31 +25,19 @@ const TIER_PERF: Record<TierBatch, [number, number, number]> = {
   far: [3, 0.86, 0],
 };
 
+const NEON_VISIBILITY_FADE_START = 260;
+const NEON_VISIBILITY_FADE_END = 320;
+
 function createDistanceLodUniforms() {
   return {
-    uDistanceFadeStart: { value: EXPLORE_DISTANCE_LOD.fadeStart },
-    uDistanceFadeEnd: { value: EXPLORE_DISTANCE_LOD.fadeEnd },
+    uDistanceFadeStart: { value: NEON_VISIBILITY_FADE_START },
+    uDistanceFadeEnd: { value: NEON_VISIBILITY_FADE_END },
     uLod1Start: { value: EXPLORE_DISTANCE_LOD.lod1Start },
     uLod1End: { value: EXPLORE_DISTANCE_LOD.lod1End },
     uLod2Start: { value: EXPLORE_DISTANCE_LOD.lod2Start },
     uLod2End: { value: EXPLORE_DISTANCE_LOD.lod2End },
     uFarFogColor: { value: new THREE.Color(EXPLORE_DISTANCE_LOD.fogColor) },
     uFarFogDensity: { value: EXPLORE_DISTANCE_LOD.fogDensity },
-  };
-}
-
-function createInactiveMirrorUniforms() {
-  return {
-    uReflectFadeDepth: { value: 1 },
-    uReflectDistNear: { value: 0 },
-    uReflectDistFar: { value: 1 },
-    uReflectDistStrength: { value: 0 },
-    uReflectFresnelPower: { value: 1 },
-    uReflectFresnelBoost: { value: 1 },
-    uReflectBlurNear: { value: 0 },
-    uReflectBlurFar: { value: 1 },
-    uReflectBlurFogMix: { value: 0 },
-    uCamPos: { value: new THREE.Vector3() },
   };
 }
 
@@ -60,25 +48,7 @@ function createNeonSignUniforms(
 ): Record<string, THREE.IUniform> {
   return {
     uTime: { value: 0 },
-    uReflect: { value: 0 },
-    uReflectBoost: { value: 1 },
-    uReflectGain: { value: 1 },
-    ...createInactiveMirrorUniforms(),
-    uBrickPitch: { value: 1 },
-    uBrickGap: { value: 0 },
-    uBrickOrigin: { value: new THREE.Vector2(-120, -120) },
-    uSeamReflectGain: { value: 0 },
-    uSurfaceReflectGain: { value: 0 },
-    uSeamBlurScale: { value: 1 },
-    uSurfaceBlurScale: { value: 1 },
-    uUseEdgeGapMask: { value: 1 },
-    uGapWidthFrac: { value: 0 },
-    uGapFeather: { value: 0 },
-    uReflectionSeamDistortion: { value: 0 },
-    uSeamDistortionNoiseScale: { value: 1 },
-    uSeamDistortionSpeed: { value: 0 },
-    uDebugDistortedReflection: { value: 0 },
-    uReflectSurfacePass: { value: 0 },
+    uCamPos: { value: new THREE.Vector3() },
     ...createDistanceLodUniforms(),
     uGlitchDuration: { value: POSTER_GLITCH_BURST.duration },
     uGlitchSteps: { value: POSTER_GLITCH_BURST.steps },
@@ -209,7 +179,9 @@ function NeonSignBatch({
         fragmentShader: exploreNeonSignFrag,
         transparent: true,
         depthWrite: false,
+        depthTest: true,
         side: THREE.DoubleSide,
+        blending: THREE.NormalBlending,
         toneMapped: false,
       }),
     [uniforms],
@@ -250,7 +222,7 @@ function NeonSignBatch({
       ref={meshRef}
       args={[geometry, material, count]}
       renderOrder={tier === 'hero' ? 4 : tier === 'near' ? 3 : 2}
-      frustumCulled={tier !== 'far'}
+      frustumCulled={false}
     />
   );
 }

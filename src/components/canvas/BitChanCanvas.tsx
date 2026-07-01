@@ -109,12 +109,12 @@ function drawBellyDisplay(
   // 情绪覆盖层
   if (mood === 'happy') {
     ctx.fillStyle = '#ff2a2a';
-    ctx.font = '10px monospace';
+    ctx.font = '10px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('♥', 0, by + bh / 2 + 1);
   } else if (mood === 'surprised') {
     ctx.fillStyle = '#ffffff';
-    ctx.font = '7px monospace';
+    ctx.font = '7px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.textAlign = 'center';
     for (let i = 0; i < 6; i++) {
       const c = String.fromCharCode(0x30a0 + Math.floor(Math.random() * 96));
@@ -123,7 +123,7 @@ function drawBellyDisplay(
   } else if (mood === 'sleepy') {
     anim.zzzPhase += 0.04;
     ctx.fillStyle = 'rgba(255,42,42,0.6)';
-    ctx.font = '8px monospace';
+    ctx.font = '8px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.textAlign = 'right';
     const z = 'z'.repeat(1 + Math.floor((Math.sin(anim.zzzPhase) + 1) * 1.5));
     ctx.fillText(z.toUpperCase(), bx + bw - 2, by - 2);

@@ -31,6 +31,7 @@ export default function TopicTagBars({ tags }: TopicTagBarsProps) {
             <div
               key={tag.tagSlug ?? tag.tagName}
               className="leetcode-topic-bars__row"
+              style={{ '--topic-row-delay': `${index * 0.075}s` } as CSSProperties}
               title={`${tag.tagName}: ${tag.problemsSolved} solved`}
             >
               <span className="leetcode-topic-bars__name">

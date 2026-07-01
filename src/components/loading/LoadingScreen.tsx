@@ -16,7 +16,7 @@ interface LoadingScreenProps {
 type IntroState = 'idle' | 'exiting';
 
 /** Matches `.explore-vision-reveal` animation duration in index.css */
-const EXIT_MS = 820;
+const EXIT_MS = 2159;
 /** 进入网站前需等待的时长 */
 const ENTER_LOCK_MS = 3000;
 

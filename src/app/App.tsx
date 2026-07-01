@@ -21,6 +21,8 @@ function shouldSkipInitialLoading(): boolean {
   );
 }
 
+const EXPLORE_VISION_REVEAL_MS = 2474;
+
 export default function App() {
   const skipInitialLoading = shouldSkipInitialLoading();
   const [showLoading, setShowLoading] = useState(!skipInitialLoading);
@@ -75,7 +77,10 @@ export default function App() {
       previousPageRef.current !== 'EXPLORE'
     ) {
       setExploreVisionReveal(true);
-      const timeout = window.setTimeout(() => setExploreVisionReveal(false), 940);
+      const timeout = window.setTimeout(
+        () => setExploreVisionReveal(false),
+        EXPLORE_VISION_REVEAL_MS,
+      );
       previousPageRef.current = activePage;
       return () => window.clearTimeout(timeout);
     }

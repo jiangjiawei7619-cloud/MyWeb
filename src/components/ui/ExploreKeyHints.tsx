@@ -6,7 +6,7 @@ interface ExploreKeyHintsProps {
 }
 
 /** 进入 EXPLORE 后稍晚再播按键闪动 */
-const BOOT_DELAY_MS = 420;
+const BOOT_DELAY_MS = 770;
 
 function KeyLetter({ letter }: { letter: string }) {
   return <span className="text-[10px] leading-none">{letter}</span>;

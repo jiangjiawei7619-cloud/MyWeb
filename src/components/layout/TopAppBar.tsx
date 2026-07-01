@@ -92,17 +92,22 @@ export default function TopAppBar({
 
   const isAboutPage = currentPage === 'ABOUT';
   const isLeavingAboutNow = previousPageRef.current === 'ABOUT' && currentPage !== 'ABOUT';
+  const shouldDelayAboutReturnIntro = brandReturnIntroActive || isLeavingAboutNow;
   const shouldPlayBrandReturnIntro =
-    brandReturnIntroActive || isLeavingAboutNow || initialBrandIntroActive;
+    shouldDelayAboutReturnIntro || initialBrandIntroActive;
   const brandNameIntroClass = isAboutPage
     ? 'about-top-brand-cut about-top-brand-cut--name'
     : shouldPlayBrandReturnIntro
-      ? 'top-brand-return-cut top-brand-return-cut--name'
+      ? `top-brand-return-cut top-brand-return-cut--name ${
+          shouldDelayAboutReturnIntro ? 'top-brand-return-cut--from-about' : ''
+        }`
       : '';
   const brandSubtitleIntroClass = isAboutPage
     ? 'about-top-brand-subtitle'
     : shouldPlayBrandReturnIntro
-      ? 'top-brand-return-subtitle'
+      ? `top-brand-return-subtitle ${
+          shouldDelayAboutReturnIntro ? 'top-brand-return-subtitle--from-about' : ''
+        }`
       : '';
   const brandNameClass = isAboutPage
     ? 'text-[1.6875rem] md:text-[2.025rem] font-extrabold text-[#ff5357] tracking-[-0.05em] uppercase'

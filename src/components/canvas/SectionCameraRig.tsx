@@ -11,7 +11,7 @@ import {
   WORKS_FOV_ENTRY,
   EXPLORE_ENTRY_TRANSITION,
   easeInOutCubic,
-  easeOutCubic,
+  easeOutQuint,
 } from '@/lib/section-camera-presets';
 import {
   lookTargetFromYawPitch,
@@ -201,7 +201,7 @@ export default function SectionCameraRig({
           0,
           1,
         );
-        const eased = easeOutCubic(progress);
+        const eased = easeOutQuint(progress);
 
         scratch.finalPosition.copy(entry.startPosition).lerp(entry.endPosition, eased);
         scratch.finalTarget.copy(entry.endTarget);

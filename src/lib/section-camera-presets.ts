@@ -101,7 +101,7 @@ export const WORKS_FOV_ENTRY = {
  * FOV 从略窄展开到 CAMERA_BASE_FOV；结束后交棒第一人称控制器（无跳变）。
  */
 export const EXPLORE_ENTRY_TRANSITION = {
-  duration: 0.48,
+  duration: 1.264,
   pullBackDistance: 1.35,
   startFov: 68,
 } as const;
@@ -114,4 +114,9 @@ export function easeInOutCubic(t: number): number {
 export function easeOutCubic(t: number): number {
   const c = Math.min(Math.max(t, 0), 1);
   return 1 - Math.pow(1 - c, 3);
+}
+
+export function easeOutQuint(t: number): number {
+  const c = Math.min(Math.max(t, 0), 1);
+  return 1 - Math.pow(1 - c, 5);
 }
